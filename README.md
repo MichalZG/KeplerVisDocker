@@ -10,6 +10,9 @@
 ```
 docker-compose up
 ```
-### 4) Open 127.0.0.1:8050 in web browser.
- 
+### 4) Open web adress:
+```
+127.0.0.1:8050
+```
+
 #### Note: first start will take some time (depends on connection speed)!
