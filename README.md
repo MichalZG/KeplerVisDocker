@@ -10,7 +10,7 @@
 ```
 docker-compose up
 ```
-### 4) Open web adress:
+### 4) Open web page:
 ```
 127.0.0.1:8050
 ```
