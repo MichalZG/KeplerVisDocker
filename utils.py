@@ -212,13 +212,21 @@ class StateRecorder:
 
     def save_output(self, dff, file_name, save_format):
         time_now = time.strftime("D%d%m%yT%H%M%S", time.gmtime())
-        file_name = file_name.replace('.', '_{}.'.format(time_now))
+        # file_name = file_name.replace('.', '_{}.'.format(time_now))
+        file_name = '_'.join([file_name, time_now]) + '.' + save_format
+        dff = dff[dff['activ'] == 1]
+        # dff.drop(columns=['activ'], inplace=True)
+
         if save_format == 'csv':
             dff.to_csv(os.path.join(
-                config.get('STATE', 'OUTPUT_PATH'), file_name))
+                config.get('STATE', 'OUTPUT_PATH'), file_name), index=False,
+                columns=('jd', 'counts', 'errors', 'flags'))
+
         elif save_format == 'txt':
-            dff.to_csv(os.path.join(
+
+            np.savetxt(os.path.join(
                 config.get('STATE', 'OUTPUT_PATH'), file_name),
-                sep=' ')
+                np.c_[dff.jd, dff.counts, dff.errors, dff.flags],
+                fmt='%.6f %.5f %.5f %d')
 
         return True

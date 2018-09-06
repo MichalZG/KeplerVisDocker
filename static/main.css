@@ -12,8 +12,18 @@ body{
 	align-items: flex-start;
 }
 
+.states-box{
+  display: flex;
+  flex-direction: row;
+}
+
 .upload-button{
 	float: right;
+}
+
+#save-format{
+  width: 10px !important;
+  height: 30px;
 }
 
 #fit-start-value-button{
