@@ -223,7 +223,6 @@ class StateRecorder:
                 columns=('jd', 'counts', 'errors', 'flags'))
 
         elif save_format == 'txt':
-
             np.savetxt(os.path.join(
                 config.get('STATE', 'OUTPUT_PATH'), file_name),
                 np.c_[dff.jd, dff.counts, dff.errors, dff.flags],
