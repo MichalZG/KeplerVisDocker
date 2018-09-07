@@ -94,8 +94,8 @@ def fit_function(dff, fitFuntion, parameters=[]):
         xnew = roll_df_mean.jd
         ynew = roll_df_mean.counts
 
-        dff.loc[:, 'median'] = roll_dff.mean().counts
-        dff.loc[:, 'std'] = roll_dff.std().counts
+        dff.loc[:, 'median'] = roll_dff.counts.mean()
+        dff.loc[:, 'std'] = roll_dff.counts.std()
 
         dff_out = dff
         dff_out = dff[(
