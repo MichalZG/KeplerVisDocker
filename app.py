@@ -424,6 +424,7 @@ def update_fit_function(_, startFitValue,
         dff = get_activ(sf_trigger)
         dff = dff[(dff.jd > float(startFitValue)) &
                   (dff.jd < float(endFitValue))]
+
         if fitFunction == 'spline':
             dff = get_binned_xy(dff, parameterValue, sf_trigger)
         if fitFunction == 'movingaverage':
@@ -450,6 +451,10 @@ def confirm_fit_function(_, setPointValue, all_data_mean):
 
         if func_name == 'movingaverage':
             deactivate_points([z[1].jd])
+            df.loc[
+                list(z[0].jd.mean().index), 'counts'] -= z[0].counts.mean()
+            df.loc[
+                list(z[0].jd.mean().index), 'counts'] += float(setPointValue)
         else:
             x = df.jd[
                 (df.jd > float(xnew[0])) & (df.jd < float(xnew[-1]))].values
