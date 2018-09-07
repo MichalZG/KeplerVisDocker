@@ -97,10 +97,10 @@ app.layout = html.Div([
 
     html.Div([
         html.Div([
-            html.Button('Set point', id='set-point-button', n_clicks=0,
+            html.Button('Zoom point', id='zoom-point-button', n_clicks=0,
                         n_clicks_timestamp=0),
-            html.P(id='set-point-x-text', children='---'),
-            html.P(id='set-point-y-text', children='---'),
+            html.P(id='zoom-point-x-text', children='---'),
+            html.P(id='zoom-point-y-text', children='---'),
             html.Div([
                 dcc.Dropdown(
                     id='saved-states-list',
@@ -120,11 +120,15 @@ app.layout = html.Div([
             ])
         ]),
         html.Div([
+            html.Button('Set point', id='set-point-button', n_clicks=0,
+                        n_clicks_timestamp=0),
             html.Button('Start', id='fit-start-value-button', n_clicks=0,
                         n_clicks_timestamp=0),
             html.Button('End', id='fit-end-value-button', n_clicks=0,
                         n_clicks_timestamp=0),
             html.Br(),
+            html.P(id='set-point-x-text', children='---'),
+            html.P(id='set-point-y-text', children='---'),
             dcc.Input(
                 id='fit-start-value',
                 placeholder='Start point',
@@ -244,7 +248,7 @@ app.layout = html.Div([
 @app.callback(
     Output('buttons-times', 'children'),
     [Input('set-binning-full-button', 'n_clicks_timestamp'),
-     Input('set-point-button', 'n_clicks_timestamp'),
+     Input('zoom-point-button', 'n_clicks_timestamp'),
      Input('load-state-button', 'n_clicks_timestamp'),
      Input('fit-start-value-button', 'n_clicks_timestamp'),
      Input('fit-end-value-button', 'n_clicks_timestamp'),
@@ -257,7 +261,7 @@ app.layout = html.Div([
     [State('buttons-times', 'children')])
 @timeit
 def update_last_clicked_button(*args):
-    buttonNames = ('set-binning-full-button', 'set-point-button',
+    buttonNames = ('set-binning-full-button', 'zoom-point-button',
                    'load-state-button', 'fit-start-value-button',
                    'fit-end-value-button',
                    'fit-button', 'fit-confirm-button',
@@ -304,8 +308,8 @@ def update_global_mean_text(_):
 #     return 'Window mean value: {:.2f}'.format(dff.counts.mean())
 
 
-@app.callback(Output('set-point-x-text', 'children'),
-              [Input('set-point-button', 'n_clicks_timestamp')],
+@app.callback(Output('zoom-point-x-text', 'children'),
+              [Input('zoom-point-button', 'n_clicks_timestamp')],
               [State('all-data-graph', 'clickData')])
 @timeit
 def update_zoom_start_point_x(_, clickData):
@@ -319,8 +323,8 @@ def update_zoom_start_point_x(_, clickData):
     return '---'
 
 
-@app.callback(Output('set-point-y-text', 'children'),
-              [Input('set-point-button', 'n_clicks_timestamp')],
+@app.callback(Output('zoom-point-y-text', 'children'),
+              [Input('zoom-point-button', 'n_clicks_timestamp')],
               [State('all-data-graph', 'clickData')])
 @timeit
 def update_zoom_start_point_y(_, clickData):
@@ -442,7 +446,7 @@ def update_fit_function(_, startFitValue,
 
 @app.callback(Output('fit-confirmed', 'children'),
               [Input('fit-confirm-button', 'n_clicks_timestamp')],
-              [State('set-point-y-text', 'children'),
+              [State('zoom-point-y-text', 'children'),
                State('all-data-mean-text', 'children')])
 @timeit
 def confirm_fit_function(_, setPointValue, all_data_mean):
@@ -506,7 +510,7 @@ def update_all_data_graph(_, buttonsTimes, relayoutData,
 
     buttonsTimes, lastClickedButton = load_button_times(buttonsTimes)
 
-    setPointButtonTimes = buttonsTimes['set-point-button']
+    setPointButtonTimes = buttonsTimes['zoom-point-button']
     if zoomStartPoint is not None:
         if setPointButtonTimes[0] > setPointButtonTimes[1]:
             endPoint = get_from_clicked(
