@@ -69,26 +69,27 @@ def open_upload_file(content_string):
 
 
 @timeit
-def fit_function(dff, fitFuntion, parameters=[]):
+def fit_function(dff, fitFunction, parameters=[]):
 
     xnew = np.linspace(dff.jd.min(), dff.jd.max(),
                        num=dff.jd.__len__() * config.getint(
         'MAIN_GRAPH', 'FIT_DENSITY'),
         endpoint=True)
 
-    if fitFuntion == 'line':
+    if fitFunction == 'line':
         z = np.poly1d(np.polyfit(dff.jd, dff.counts, 1))
         ynew = z(xnew)
         yrescale = 1
-    elif fitFuntion == 'parabola':
+    elif fitFunction == 'parabola':
         z = np.poly1d(np.polyfit(dff.jd, dff.counts, 2))
         ynew = z(xnew)
         yrescale = 1
-    elif fitFuntion == 'spline':
+    elif fitFunction == 'spline':
         z = CubicSpline(dff.jd, dff.counts)
         ynew = z(xnew)
         yrescale = 1
-    elif fitFuntion == 'movingaverage':
+    elif (fitFunction == 'movingaverage_p' or
+          fitFunction == 'movingaverage_t'):
         roll_dff = dff.rolling(window=parameters[0], min_periods=1)
         roll_df_mean = roll_dff.mean()[roll_dff.mean().jd > 0]
         xnew = roll_df_mean.jd
@@ -105,7 +106,7 @@ def fit_function(dff, fitFuntion, parameters=[]):
         z = [roll_dff, dff_out]
         yrescale = 1
 
-    return [z, xnew, ynew, yrescale, fitFuntion, parameters]
+    return [z, xnew, ynew, yrescale, fitFunction, parameters]
 
 
 @timeit
@@ -155,13 +156,13 @@ def create_function_plot(dff, fit_func):
             'MAIN_GRAPH', 'FIT_POINTS_SIZEMIN'),
             sizemax=config.getfloat('MAIN_GRAPH',
                                     'FIT_POINTS_SIZEMAX')))]
-    if func_name == 'movingaverage':
+    if (func_name == 'movingaverage_p'):
         dff_out = func[1]
 
         functionPlot.append(go.Pointcloud(
             x=dff_out.jd,
             y=dff_out.counts,
-            marker=dict(color=config.get('MAIN_GRAPH', 'FIT_COLOR'),
+            marker=dict(color=config.get('MAIN_GRAPH', 'FIT_MOVING_AVERAGE_POINTS_COLOR'),
                         sizemin=config.getfloat('MAIN_GRAPH',
                                                 'FIT_POINTS_SIZEMIN'),
                         sizemax=config.getfloat('MAIN_GRAPH',

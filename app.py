@@ -143,7 +143,8 @@ app.layout = html.Div([
             dcc.Dropdown(
                 id='fit-function-type',
                 options=[
-                    {'label': 'Moving Average', 'value': 'movingaverage'},
+                    {'label': 'Moving Average P', 'value': 'movingaverage_p'},
+                    {'label': 'Moving Average T', 'value': 'movingaverage_t'},
                     {'label': 'Spline', 'value': 'spline'},
                     {'label': 'Parabola', 'value': 'parabola'},
                     {'label': 'Line', 'value': 'line'}
@@ -371,7 +372,7 @@ def update_end_point_value(_, clickData):
               [Input('fit-function-type', 'value')])
 @timeit
 def lock_fit_function_parameter_value(fitFunction):
-    if fitFunction in ['spline', 'movingaverage']:
+    if fitFunction in ['spline', 'movingaverage_p', 'movingaverage_t']:
         return False
     return True
 
@@ -380,7 +381,7 @@ def lock_fit_function_parameter_value(fitFunction):
               [Input('fit-function-type', 'value')])
 @timeit
 def lock_fit_function_parameter_value2(fitFunction):
-    if fitFunction in ['movingaverage']:
+    if fitFunction in ['movingaverage_p', 'movingaverage_t']:
         return False
     return True
 
@@ -388,7 +389,7 @@ def lock_fit_function_parameter_value2(fitFunction):
 @app.callback(Output('fit-function-parameter-text', 'children'),
               [Input('fit-function-type', 'value')])
 def update_parameter_text(fitFunction):
-    if fitFunction == 'movingaverage':
+    if fitFunction in ['movingaverage_p', 'movingaverage_t']:
         return 'Window'
     elif fitFunction == 'spline':
         return 'Binning'
@@ -399,7 +400,7 @@ def update_parameter_text(fitFunction):
 @app.callback(Output('fit-function-parameter-text2', 'children'),
               [Input('fit-function-type', 'value')])
 def update_parameter_text(fitFunction):
-    if fitFunction == 'movingaverage':
+    if fitFunction in ['movingaverage_p', 'movingaverage_t']:
         return 'nSigma'
     else:
         return '---'
@@ -427,7 +428,8 @@ def update_fit_function(_, startFitValue,
 
         if fitFunction == 'spline':
             dff = get_binned_xy(dff, parameterValue, sf_trigger)
-        if fitFunction == 'movingaverage':
+        if (fitFunction == 'movingaverage_p' or
+                fitFunction == 'movingaverage_t'):
             fit_func = fit_function(dff, fitFunction,
                                     [parameterValue, parameterValue2])
             return []
@@ -449,8 +451,9 @@ def confirm_fit_function(_, setPointValue, all_data_mean):
     if fit_func is not None:
         z, xnew, _, _, func_name, *_ = fit_func
 
-        if func_name == 'movingaverage':
+        if func_name == 'movingaverage_p':
             deactivate_points([z[1].jd])
+        elif func_name == 'movingaverage_t':
             df.loc[
                 list(z[0].jd.mean().index), 'counts'] -= z[0].counts.mean()
             df.loc[
