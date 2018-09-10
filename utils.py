@@ -128,19 +128,47 @@ def create_shadow_shape(startPoint, endPoint):
 
 
 @timeit
-def create_line(point):
+def create_line(point, line_type):
 
-    line = dict(
-        type='line',
-        xref='x',
-        yref='paper',
-        x0=point,
-        y0=0,
-        x1=point,
-        y1=1,
-        opacity=config.getfloat('MAIN_GRAPH', 'LINE_OPACITY'),
-        line=dict(color=config.get('MAIN_GRAPH', 'LINE_COLOR'),
-                  width=config.getfloat('MAIN_GRAPH', 'LINE_WIDTH')))
+    if line_type == 'vertical':
+        line = dict(
+            type='line',
+            xref='x',
+            yref='paper',
+            x0=point,
+            y0=0,
+            x1=point,
+            y1=1,
+            opacity=config.getfloat(
+                'MAIN_GRAPH', 'LINE_VERTICAL_OPACITY'),
+            line=dict(
+                color=config.get(
+                    'MAIN_GRAPH', 'LINE_VERTICAL_COLOR'),
+                width=config.getfloat(
+                    'MAIN_GRAPH', 'LINE_VERTICAL_WIDTH'),
+                dash=config.get(
+                    'MAIN_GRAPH', 'LINE_VERTICAL_DASH')))
+
+    elif line_type == 'horizontal':
+        line = dict(
+            type='line',
+            xref='paper',
+            yref='y',
+            x0=0,
+            y0=point,
+            x1=1,
+            y1=point,
+            opacity=config.getfloat(
+                'MAIN_GRAPH', 'LINE_HORIZONTAL_OPACITY'),
+            line=dict(
+                color=config.get(
+                    'MAIN_GRAPH', 'LINE_HORIZONTAL_COLOR'),
+                width=config.getfloat(
+                    'MAIN_GRAPH', 'LINE_HORIZONTAL_WIDTH'),
+                dash=config.get(
+                    'MAIN_GRAPH', 'LINE_HORIZONTAL_DASH')))
+    else:
+        line = dict()
 
     return line
 
@@ -162,11 +190,12 @@ def create_function_plot(dff, fit_func):
         functionPlot.append(go.Pointcloud(
             x=dff_out.jd,
             y=dff_out.counts,
-            marker=dict(color=config.get('MAIN_GRAPH', 'FIT_MOVING_AVERAGE_POINTS_COLOR'),
-                        sizemin=config.getfloat('MAIN_GRAPH',
-                                                'FIT_POINTS_SIZEMIN'),
-                        sizemax=config.getfloat('MAIN_GRAPH',
-                                                'FIT_POINTS_SIZEMAX'))))
+            marker=dict(color=config.get(
+                'MAIN_GRAPH', 'FIT_MOVING_AVERAGE_POINTS_COLOR'),
+                sizemin=config.getfloat('MAIN_GRAPH',
+                                        'FIT_POINTS_SIZEMIN'),
+                sizemax=config.getfloat('MAIN_GRAPH',
+                                        'FIT_POINTS_SIZEMAX'))))
     return functionPlot
 
 

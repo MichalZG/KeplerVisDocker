@@ -253,6 +253,7 @@ app.layout = html.Div([
     [Input('set-binning-full-button', 'n_clicks_timestamp'),
      Input('zoom-point-button', 'n_clicks_timestamp'),
      Input('load-state-button', 'n_clicks_timestamp'),
+     Input('set-point-button', 'n_clicks_timestamp'),
      Input('fit-start-value-button', 'n_clicks_timestamp'),
      Input('fit-end-value-button', 'n_clicks_timestamp'),
      Input('fit-button', 'n_clicks_timestamp'),
@@ -265,7 +266,8 @@ app.layout = html.Div([
 @timeit
 def update_last_clicked_button(*args):
     buttonNames = ('set-binning-full-button', 'zoom-point-button',
-                   'load-state-button', 'fit-start-value-button',
+                   'load-state-button', 'set-point-button',
+                   'fit-start-value-button',
                    'fit-end-value-button',
                    'fit-button', 'fit-confirm-button',
                    'clear-fit-button', 'set-binning-zoom-button',
@@ -537,11 +539,12 @@ def clear_fit_function(_):
                Input('all-data-graph', 'relayoutData')],
               [State('input-binning-full', 'value'),
                State('all-data-graph', 'clickData'),
+               State('set-point-y-text', 'children'),
                State('fit-start-value', 'value'),
                State('fit-end-value', 'value')])
 @timeit
 def update_all_data_graph(_, buttonsTimes, relayoutData,
-                          binningValue, clickData,
+                          binningValue, clickData, setPointValue,
                           startFitValue, endFitValue):
     global shadow_shape
     dff = get_activ(sf_trigger)
@@ -554,7 +557,8 @@ def update_all_data_graph(_, buttonsTimes, relayoutData,
         if setPointButtonTimes[0] > setPointButtonTimes[1]:
             endPoint = get_from_clicked(
                 dff, buttonsTimes[
-                    lastClickedButton][0], sf_trigger).jd.values[:scattergl_limit][-1]
+                    lastClickedButton][0], sf_trigger).jd.values[
+                :scattergl_limit][-1]
             startPoint = zoomStartPoint[0]
 
             shadow_shape = create_shadow_shape(startPoint, endPoint)
@@ -564,9 +568,12 @@ def update_all_data_graph(_, buttonsTimes, relayoutData,
             layout['shapes'].append(shadow_shape)
 
     if startFitValue is not None:
-        layout['shapes'].append(create_line(startFitValue))
+        layout['shapes'].append(create_line(startFitValue, 'vertical'))
     if endFitValue is not None:
-        layout['shapes'].append(create_line(endFitValue))
+        layout['shapes'].append(create_line(endFitValue, 'vertical'))
+    if '---' not in setPointValue:
+        set_point = float(setPointValue.split(' ')[1])
+        layout['shapes'].append(create_line(set_point, 'horizontal'))
 
     dff = get_binned_xy(dff, binningValue, sf_trigger)
 
