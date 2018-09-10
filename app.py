@@ -54,12 +54,15 @@ start_date_int = None
 fit_func = None
 shadow_shape = None
 zoomStartPoint = None
+setPoint = None
 fileName = None
 sf_trigger = 1
 
 df = pd.DataFrame(
-    data={'jd': [], 'counts': [], 'err': [],
-          'flag': [], 'activ': []})
+    data=dict(
+        [(name, []) for name in config.get(
+            'FILES', 'COLUMNS_NAMES').split(',')])
+)
 
 
 # LAYOUT
@@ -100,7 +103,7 @@ app.layout = html.Div([
             html.Button('Zoom point', id='zoom-point-button', n_clicks=0,
                         n_clicks_timestamp=0),
             html.P(id='zoom-point-x-text', children='---'),
-            html.P(id='zoom-point-y-text', children='---'),
+            # html.P(id='zoom-point-y-text', children='---'),
             html.Div([
                 dcc.Dropdown(
                     id='saved-states-list',
@@ -127,7 +130,7 @@ app.layout = html.Div([
             html.Button('End', id='fit-end-value-button', n_clicks=0,
                         n_clicks_timestamp=0),
             html.Br(),
-            html.P(id='set-point-x-text', children='---'),
+            # html.P(id='set-point-x-text', children='---'),
             html.P(id='set-point-y-text', children='---'),
             dcc.Input(
                 id='fit-start-value',
@@ -317,25 +320,55 @@ def update_zoom_start_point_x(_, clickData):
     if clickData is not None:
         zoomStartPoint = [clickData['points'][0]['x'],
                           clickData['points'][0]['y']]
-        return '{:.4f}'.format(zoomStartPoint[0])
+        return 'x: {:.4f}'.format(zoomStartPoint[0])
     if len(df.jd) > 0:
-        return '{:.4f}'.format(df.jd.values[0])
-    return '---'
+        return 'x: {:.4f}'.format(df.jd.values[0])
+    return 'x: ---'
 
 
-@app.callback(Output('zoom-point-y-text', 'children'),
-              [Input('zoom-point-button', 'n_clicks_timestamp')],
+# @app.callback(Output('zoom-point-y-text', 'children'),
+#               [Input('zoom-point-button', 'n_clicks_timestamp')],
+#               [State('all-data-graph', 'clickData')])
+# @timeit
+# def update_zoom_start_point_y(_, clickData):
+#     global zoomStartPoint
+#     if clickData is not None:
+#         zoomStartPoint = [clickData['points'][0]['x'],
+#                           clickData['points'][0]['y']]
+#         return 'y: {:.4f}'.format(zoomStartPoint[1])
+#     if len(df.jd) > 0:
+#         return 'y: {:.4f}'.format(df.counts.values[0])
+#     return 'y: ---'
+
+
+# @app.callback(Output('set-point-x-text', 'children'),
+#               [Input('set-point-button', 'n_clicks_timestamp')],
+#               [State('all-data-graph', 'clickData')])
+# @timeit
+# def update_set_point_x(_, clickData):
+#     global setPoint
+#     if clickData is not None:
+#         setPoint = [clickData['points'][0]['x'],
+#                     clickData['points'][0]['y']]
+#         return 'x: {:.4f}'.format(setPoint[0])
+#     if len(df.jd) > 0:
+#         return 'x: {:.4f}'.format(df.jd.values[0])
+#     return 'x: ---'
+
+
+@app.callback(Output('set-point-y-text', 'children'),
+              [Input('set-point-button', 'n_clicks_timestamp')],
               [State('all-data-graph', 'clickData')])
 @timeit
-def update_zoom_start_point_y(_, clickData):
-    global zoomStartPoint
+def update_set_point_y(_, clickData):
+    global setPoint
     if clickData is not None:
-        zoomStartPoint = [clickData['points'][0]['x'],
-                          clickData['points'][0]['y']]
-        return '{:.4f}'.format(zoomStartPoint[1])
+        setPoint = [clickData['points'][0]['x'],
+                    clickData['points'][0]['y']]
+        return 'y: {:.4f}'.format(setPoint[1])
     if len(df.jd) > 0:
-        return '{:.4f}'.format(df.counts.values[0])
-    return '---'
+        return 'y: {:.4f}'.format(df.counts.values[0])
+    return 'y: ---'
 
 
 @app.callback(Output('saved-states-list', 'options'),
@@ -446,7 +479,7 @@ def update_fit_function(_, startFitValue,
 
 @app.callback(Output('fit-confirmed', 'children'),
               [Input('fit-confirm-button', 'n_clicks_timestamp')],
-              [State('zoom-point-y-text', 'children'),
+              [State('set-point-y-text', 'children'),
                State('all-data-mean-text', 'children')])
 @timeit
 def confirm_fit_function(_, setPointValue, all_data_mean):
@@ -460,8 +493,14 @@ def confirm_fit_function(_, setPointValue, all_data_mean):
         elif func_name == 'movingaverage_t':
             df.loc[
                 list(z[0].jd.mean().index), 'counts'] -= z[0].counts.mean()
-            df.loc[
-                list(z[0].jd.mean().index), 'counts'] += float(setPointValue)
+            if setPointValue != '---':
+                df.loc[
+                    list(z[0].jd.mean().index), 'counts'] += float(
+                        setPointValue.split(' ')[1])
+            else:
+                df.loc[
+                    list(z[0].jd.mean().index), 'counts'] += get_global_mean(
+                        df, sf_trigger)
         else:
             x = df.jd[
                 (df.jd > float(xnew[0])) & (df.jd < float(xnew[-1]))].values
@@ -469,7 +508,7 @@ def confirm_fit_function(_, setPointValue, all_data_mean):
                 (df.jd > float(xnew[0])) & (df.jd < float(xnew[-1]))].values
 
             if setPointValue != '---':
-                ynew = y - z(x) + float(setPointValue)
+                ynew = y - z(x) + float(setPointValue.split(' ')[1])
             else:
                 ynew = y - z(x) + get_global_mean(df, sf_trigger)
 
@@ -696,7 +735,10 @@ def save_output(_, save_format):
 @timeit
 def deactivate_points(sf):
     points_for_dactiv = list(chain(*sf))
-    df.loc[points_for_dactiv, 'activ'] = 0
+    try:
+        df.loc[points_for_dactiv, 'activ'] = 0
+    except ValueError:
+        pass
 
 
 @timeit
