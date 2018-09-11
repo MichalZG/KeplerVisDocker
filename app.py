@@ -210,7 +210,6 @@ app.layout = html.Div([
             max=config.getint('INPUTS', 'BINNING_MAX')),
         html.Button('Set binning', id='set-binning-zoom-button', n_clicks=0,
                     n_clicks_timestamp=0)
-
     ]),
 
     dcc.Location(id='location3', refresh=True),
@@ -241,7 +240,9 @@ app.layout = html.Div([
              style={'display': 'none'}),
     html.Div(id='load-state-temp',
              style={'display': 'none'}),
-    html.Div(id='save_output_temp',
+    html.Div(id='save-output-temp',
+             style={'display': 'none'}),
+    html.Div(id='zoom-graph-relayout-temp', children=None,
              style={'display': 'none'}),
     html.Div(id='clear-data', children='value', style={'display': 'none'}),
     html.Div(id='buttons-times', children=None,
@@ -608,7 +609,8 @@ def update_all_data_graph(_, buttonsTimes, relayoutData,
 @app.callback(Output('zoom-data-graph', 'figure'),
               [Input('data-modification-trigger', 'children'),
                Input('buttons-times', 'children')],
-              [State('zoom-data-graph', 'relayoutData'),
+              [State('zoom-graph-relayout-temp', 'children'),
+               # State('zoom-data-graph', 'relayoutData'),
                State('input-binning-zoom', 'value'),
                State('all-data-graph', 'clickData')])
 @timeit
@@ -621,13 +623,15 @@ def update_zoom_data_graph(_, buttonsTimes,
     relayout_xrange = []
     relayout_yrange = []
     layout = {}
-
     if relayoutData:
-        if 'xaxis.range[0]' in relayoutData:
+        relayoutData = json.loads(relayoutData)
+        if lastClickedButton == 'zoom-point-button':
+            pass
+        elif ('xaxis.range[0]' in relayoutData or
+              'yaxis.range[0]' in relayoutData):
             relayout_xrange = [relayoutData['xaxis.range[0]'],
                                relayoutData['xaxis.range[1]']]
 
-        if 'yaxis.range[0]' in relayoutData:
             relayout_yrange = [relayoutData['yaxis.range[0]'],
                                relayoutData['yaxis.range[1]']]
 
@@ -652,6 +656,24 @@ def update_zoom_data_graph(_, buttonsTimes,
     fig['layout'] = layout
 
     return fig
+
+
+@app.callback(Output('zoom-graph-relayout-temp', 'children'),
+              [Input('zoom-data-graph', 'relayoutData'),
+               Input('buttons-times', 'children')],
+              [State('zoom-graph-relayout-temp', 'children')])
+@timeit
+def zoom_graph_relayout_data_update(relayoutData, buttonsTimes, prevData):
+    logger.warning(relayoutData)
+
+    if (relayoutData is not None) and ('xaxis.range[0]' in relayoutData or
+                                       'yaxis.range[0]' in relayoutData):
+        return json.dumps(relayoutData)
+
+    elif (relayoutData is not None) and ('xaxis.autorange' in relayoutData or
+                                         'yaxis.autorange' in relayoutData):
+        return []
+    return prevData
 
 
 @app.callback(Output('delete-data', 'children'),
@@ -734,7 +756,7 @@ def load_state(_, state):
     return time.time()
 
 
-@app.callback(Output('save_output_temp', 'children'),
+@app.callback(Output('save-output-temp', 'children'),
               [Input('save-output-button', 'n_clicks_timestamp')],
               [State('save-format', 'value')])
 @timeit

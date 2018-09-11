@@ -6,6 +6,9 @@ services:
      - "8050:8050"
     volumes:
       - .:/code
+    depends_on:
+      - "redis"
+
   redis:
     image: "redis:alpine"
     # environment: 
@@ -13,10 +16,15 @@ services:
     # command: ["redis-server", "--appendonly", "yes"]
     command: ["redis-server", "--appendonly", "yes"]
     hostname: redis
+    healthcheck:
+      test: redis-server -v
+      interval: 1s
+      timeout: 5s
+      retries: 30
 
-  rcli:
-    image: redis:alpine
-    links:
-      - redis
-    command: >
-       sh -c 'redis-cli FLUSHALL '
+  # rcli:
+  #   image: redis:alpine
+  #   links:
+  #     - redis
+  #   command: 
+  #      sh -c 'redis-cli FLUSHALL '
