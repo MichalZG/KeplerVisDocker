@@ -424,7 +424,7 @@ def lock_fit_function_parameter_value(fitFunction):
               [Input('fit-function-type', 'value')])
 @timeit
 def lock_fit_function_parameter_value2(fitFunction):
-    if fitFunction in ['movingaverage_p', 'movingaverage_t']:
+    if fitFunction in ['movingaverage_p']:
         return False
     return True
 
@@ -443,7 +443,7 @@ def update_parameter_text(fitFunction):
 @app.callback(Output('fit-function-parameter-text2', 'children'),
               [Input('fit-function-type', 'value')])
 def update_parameter_text(fitFunction):
-    if fitFunction in ['movingaverage_p', 'movingaverage_t']:
+    if fitFunction in ['movingaverage_p']:
         return 'nSigma'
     else:
         return '---'
