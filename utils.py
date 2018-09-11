@@ -259,3 +259,23 @@ class StateRecorder:
                 fmt='%.6f %.5f %.5f %d')
 
         return True
+
+
+class FitRecorder:
+    def __init__(self):
+        self.fit_save_path = self.path_create(config.get('FIT',
+                                                         'FIT_OUTPUT_PATH'))
+
+    def path_create(self, save_path):
+        dirname = os.path.dirname(save_path)
+        os.makedirs(dirname, exist_ok=True)
+        return save_path
+
+    def save_output(self, fit_func, start, end, ref_point, file_name):
+        file_name = '_'.join([file_name, 'fits.dat'])
+
+        with open(os.path.join(self.fit_save_path, file_name), 'a') as f:
+            f.write('{}\n'.format(fit_func[0]))
+            f.write('{}; {}; {}\n'.format(start, end, ref_point))
+
+        return True

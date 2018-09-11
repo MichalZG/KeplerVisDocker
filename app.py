@@ -20,7 +20,7 @@ from flask_caching import Cache
 from utils import (timeit, fit_function, create_shadow_shape,
                    create_function_plot, create_line,
                    StateRecorder, load_button_times, config, open_upload_file,
-                   logger)
+                   logger, FitRecorder)
 
 pd.options.mode.chained_assignment = None
 
@@ -43,6 +43,7 @@ cache.init_app(app.server, config=CACHE_CONFIG)
 cache.clear()
 
 stateRecorder = StateRecorder()
+FitRecorder = FitRecorder()
 
 app.scripts.config.serve_locally = True
 app.config['suppress_callback_exceptions'] = True
@@ -52,6 +53,7 @@ scattergl_limit = config.getint('ZOOM_GRAPH', 'POINTS_LIMIT')
 sf = []
 start_date_int = None
 fit_func = None
+confirmed_fit_func = None
 shadow_shape = None
 zoomStartPoint = None
 refPoint = None
@@ -193,6 +195,8 @@ app.layout = html.Div([
                         n_clicks_timestamp=0),
             html.Button('Confirm', id='fit-confirm-button',
                         n_clicks=0, n_clicks_timestamp=0),
+            html.Button('Save', id='fit-save-button',
+                        n_clicks=0, n_clicks_timestamp=0),
             html.Button('Clear', id='fit-clear-button', n_clicks_timestamp=0)
         ])
     ],
@@ -235,6 +239,8 @@ app.layout = html.Div([
     html.Div(id='fitted-function-temp2',
              style={'display': 'none'}),
     html.Div(id='fitted-function-temp3',
+             style={'display': 'none'}),
+    html.Div(id='fitted-function-temp4',
              style={'display': 'none'}),
     html.Div(id='save-state-temp',
              style={'display': 'none'}),
@@ -305,21 +311,6 @@ def update_global_mean_text(_):
     return 'Global mean value: {:.2f}'.format(global_mean)
 
 
-# @app.callback(Output('window-data-mean-text', 'children'),
-#               [Input('selected-data', 'children'),
-#                Input('all-data-graph', 'relayoutData')])
-# @timeit
-# def update_windows_mean_text(_, relayoutData):
-#     dff = get_activ(sf_trigger)
-#     if relayoutData:
-#         if 'xaxis' in relayoutData:
-#             relayout_xrange = relayoutData['xaxis']
-#             dff = dff[(dff.jd > relayout_xrange[0]) &
-#                       (dff.jd < relayout_xrange[1])]
-
-#     return 'Window mean value: {:.2f}'.format(dff.counts.mean())
-
-
 @app.callback(Output('zoom-point-x-text', 'children'),
               [Input('zoom-point-button', 'n_clicks_timestamp')],
               [State('all-data-graph', 'clickData')])
@@ -333,36 +324,6 @@ def update_zoom_start_point_x(_, clickData):
     if len(df.jd) > 0:
         return 'x: {:.4f}'.format(df.jd.values[0])
     return 'x: ---'
-
-
-# @app.callback(Output('zoom-point-y-text', 'children'),
-#               [Input('zoom-point-button', 'n_clicks_timestamp')],
-#               [State('all-data-graph', 'clickData')])
-# @timeit
-# def update_zoom_start_point_y(_, clickData):
-#     global zoomStartPoint
-#     if clickData is not None:
-#         zoomStartPoint = [clickData['points'][0]['x'],
-#                           clickData['points'][0]['y']]
-#         return 'y: {:.4f}'.format(zoomStartPoint[1])
-#     if len(df.jd) > 0:
-#         return 'y: {:.4f}'.format(df.counts.values[0])
-#     return 'y: ---'
-
-
-# @app.callback(Output('set-point-x-text', 'children'),
-#               [Input('fit-ref-point-button', 'n_clicks_timestamp')],
-#               [State('all-data-graph', 'clickData')])
-# @timeit
-# def update_set_point_x(_, clickData):
-#     global refPoint
-#     if clickData is not None:
-#         refPoint = [clickData['points'][0]['x'],
-#                     clickData['points'][0]['y']]
-#         return 'x: {:.4f}'.format(refPoint[0])
-#     if len(df.jd) > 0:
-#         return 'x: {:.4f}'.format(df.jd.values[0])
-#     return 'x: ---'
 
 
 @app.callback(Output('fit-ref-point-y', 'value'),
@@ -490,7 +451,7 @@ def update_fit_function(_, startFitValue,
                State('all-data-mean-text', 'children')])
 @timeit
 def confirm_fit_function(_, refPointValue, all_data_mean):
-    global fit_func, sf_trigger, df
+    global confirmed_fit_func, fit_func, sf_trigger, df
 
     if fit_func is not None:
         z, xnew, _, _, func_name, *_ = fit_func
@@ -523,8 +484,20 @@ def confirm_fit_function(_, refPointValue, all_data_mean):
                 df.jd < float(xnew[-1]))] = ynew
     sf_trigger += 1
 
+    confirmed_fit_func = fit_func
     fit_func = None
 
+    return time.time()
+
+
+@app.callback(Output('fitted-function-temp4', 'children'),
+              [Input('fit-save-button', 'n_clicks_timestamp')])
+@timeit
+def save_fit_function(_):
+    global confirmed_fit_func, file_name
+    if confirmed_fit_func is not None:
+        FitRecorder.save_output(confirmed_fit_func, 0, 1, 5, fileName)
+    confirmed_fit_func = None
     return time.time()
 
 
@@ -532,8 +505,9 @@ def confirm_fit_function(_, refPointValue, all_data_mean):
               [Input('fit-clear-button', 'n_clicks_timestamp')])
 @timeit
 def clear_fit_function(_):
-    global fit_func
+    global fit_func, confirmed_fit_func
     fit_func = None
+    confirmed_fit_func = None
 
     return time.time()
 
@@ -664,7 +638,6 @@ def update_zoom_data_graph(_, buttonsTimes,
               [State('zoom-graph-relayout-temp', 'children')])
 @timeit
 def zoom_graph_relayout_data_update(relayoutData, buttonsTimes, prevData):
-    logger.warning(relayoutData)
 
     if (relayoutData is not None) and ('xaxis.range[0]' in relayoutData or
                                        'yaxis.range[0]' in relayoutData):
