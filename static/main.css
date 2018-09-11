@@ -25,7 +25,10 @@ body{
   width: 10px !important;
   height: 30px;
 }
-
+#fit-ref-point-button{
+  width: 100px;
+  margin: 2px;
+}
 #fit-start-value-button{
 	width: 100px;
 	margin: 2px;
@@ -33,6 +36,12 @@ body{
 #fit-end-value-button{
 	width: 100px;
 	margin: 2px;
+}
+#fit-ref-point-y{
+  width: 93px;
+  height: 30px;
+  margin: 2px;
+  padding-left: 2px;
 }
 #fit-start-value{
 	width: 93px;
