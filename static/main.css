@@ -2,9 +2,6 @@ body{
 	box-sizing: border-box;
 }
 
-.Select.has-value.is-clearable.is-searchable.Select--single{
-	width: 200px;
-}
 
 .button-box{
 	display: flex;
@@ -12,9 +9,39 @@ body{
 	align-items: flex-start;
 }
 
-.states-box{
+.button-states-box {
   display: flex;
   flex-direction: row;
+  margin-top: 5px;
+}
+
+.button-states-box button{ margin:2px; }
+
+div#saved-states-list{
+
+  width: 198px;
+  margin: 2px;
+}
+
+.states-box{
+  display: flex;
+  flex-direction: column;
+}
+
+.button-states-box .Select-control {
+  width: 80px;
+  height: 38px;
+  padding: 0;
+  margin:2px;
+}
+
+.Select.has-value.is-clearable.is-searchable.Select--single {
+  width: 80px;
+}
+
+.fit-box button {
+  width: 120px;
+  margin: 2px;
 }
 
 .upload-button{
@@ -70,11 +97,24 @@ body{
 }
 
 .parameter-box input{
-	width: 100px !important;
+	width: 120px !important;
+  margin: 2px !important;
+  height: 38px !important;
 }
 
 .parameter-box p{
-	width: 100px !important;
+	width: 120px;
+  margin: 2px;
+}
+
+div#fit-function-type .Select.has-value.is-clearable.is-searchable.Select--single {
+  width: 242px !important;
+  margin: 2px !important;
+  bottom: -15px;
+}
+
+#set-binning-zoom-button, #set-binning-full-button {
+  margin-left: 4px !important;
 }
 /*
 #fit-clear-button{
@@ -86,6 +126,16 @@ body{
 
 ._dash-undo-redo {
   display: none;
+}
+
+button {
+  background-color: #FFF !important;
+  transition: all .2s ease-in-out;
+}
+
+button:hover, button:focus {
+  background-color: #000 !important;
+  color: #FFF !important;
 }
 
 
