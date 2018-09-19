@@ -12,6 +12,15 @@ body{
 	align-items: flex-start;
 }
 
+.button-states-box {
+  display: flex;
+  flex-direction: row;
+  margin-top: 5px;
+}
+
+.button-states-box button{ margin:2px; }
+
+
 .states-box{
   display: flex;
   flex-direction: row;
@@ -26,6 +35,38 @@ body{
   height: 30px;
 }
 
+#save-format{
+  width: 10px !important;
+  height: 30px;
+}
+
+div#saved-states-list{
+
+  width: 198px;
+  margin: 2px;
+}
+
+.fit-box button {
+  width: 120px;
+  margin: 2px;
+}
+
+.Select.has-value.is-clearable.is-searchable.Select--single {
+  width: 80px;
+}
+
+.button-states-box .Select-control {
+  width: 80px;
+  height: 38px;
+  padding: 0;
+  margin:2px;
+}
+
+#fit-ref-point-button{
+  width: 100px;
+  margin: 2px;
+  text-align: center;
+}
 #fit-start-value-button{
 	width: 100px;
 	margin: 2px;
@@ -33,6 +74,12 @@ body{
 #fit-end-value-button{
 	width: 100px;
 	margin: 2px;
+}
+#fit-ref-point-y{
+  width: 93px;
+  height: 30px;
+  margin: 2px;
+  padding-left: 2px;
 }
 #fit-start-value{
 	width: 93px;
@@ -84,8 +131,62 @@ body{
 	margin: 2px !important;
 }
 
+#input-function-parameter{
+  width: 118px !important;
+  height: 25px !important;
+  padding: 2px !important;
+  margin: 0 !important;
+}
+#input-function-parameter2{
+  width: 118px !important;
+  height: 25px !important;
+  margin: 0 !important;
+}
+
+.parameter-box{
+  display: flex;
+  flex-direction: row;
+}
+
+.parameter-box input{
+  width: 120px !important;
+  margin: 2px !important;
+  height: 38px !important;
+}
+
+.parameter-box p{
+  width: 125px !important;
+  margin: 2px !important;
+}
+
+.fit-states-box button {
+  width:120px !important;
+}
+
+.fit-states-box input {
+  width:114px !important;
+  padding: 0;
+  margin:  0;
+}
+
+div#fit-function-type .Select.has-value.is-clearable.is-searchable.Select--single {
+  width: 242px !important;
+  margin: 2px !important;
+  bottom: -15px;
+}
+
 ._dash-undo-redo {
   display: none;
+}
+
+button {
+  background-color: #FFF !important;
+  transition: all .2s ease-in-out;
+}
+
+button:hover, button:focus {
+  background-color: #000 !important;
+  color: #FFF !important;
 }
 
 

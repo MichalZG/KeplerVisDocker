@@ -6,9 +6,10 @@ services:
      - "8050:8050"
     volumes:
       - .:/code
+    depends_on:
+      - "redis"
+
   redis:
     image: "redis:alpine"
-    environment: 
-      - FLUSHALL=yes
     command: ["redis-server", "--appendonly", "yes"]
     hostname: redis

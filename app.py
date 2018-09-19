@@ -20,7 +20,7 @@ from flask_caching import Cache
 from utils import (timeit, fit_function, create_shadow_shape,
                    create_function_plot, create_line,
                    StateRecorder, load_button_times, config, open_upload_file,
-                   logger)
+                   logger, FitRecorder)
 
 pd.options.mode.chained_assignment = None
 
@@ -43,6 +43,7 @@ cache.init_app(app.server, config=CACHE_CONFIG)
 cache.clear()
 
 stateRecorder = StateRecorder()
+FitRecorder = FitRecorder()
 
 app.scripts.config.serve_locally = True
 app.config['suppress_callback_exceptions'] = True
@@ -52,14 +53,18 @@ scattergl_limit = config.getint('ZOOM_GRAPH', 'POINTS_LIMIT')
 sf = []
 start_date_int = None
 fit_func = None
+confirmed_fit_func = None
 shadow_shape = None
 zoomStartPoint = None
+refPoint = None
 fileName = None
 sf_trigger = 1
 
 df = pd.DataFrame(
-    data={'jd': [], 'counts': [], 'err': [],
-          'flag': [], 'activ': []})
+    data=dict(
+        [(name, []) for name in config.get(
+            'FILES', 'COLUMNS_NAMES').split(',')])
+)
 
 
 # LAYOUT
@@ -97,10 +102,10 @@ app.layout = html.Div([
 
     html.Div([
         html.Div([
-            html.Button('Set point', id='set-point-button', n_clicks=0,
+            html.Button('Zoom point', id='zoom-point-button', n_clicks=0,
                         n_clicks_timestamp=0),
-            html.P(id='set-point-x-text', children='---'),
-            html.P(id='set-point-y-text', children='---'),
+            html.P(id='zoom-point-x-text', children='---'),
+            # html.P(id='zoom-point-y-text', children='---'),
             html.Div([
                 dcc.Dropdown(
                     id='saved-states-list',
@@ -117,14 +122,24 @@ app.layout = html.Div([
                                  {'label': 'txt', 'value': 'txt'}],
                         value='csv')
                 ], className='states-box')
-            ])
+            ], className='button-states-box')
         ]),
         html.Div([
+            html.Button('Ref point', id='fit-ref-point-button', n_clicks=0,
+                        n_clicks_timestamp=0),
             html.Button('Start', id='fit-start-value-button', n_clicks=0,
                         n_clicks_timestamp=0),
             html.Button('End', id='fit-end-value-button', n_clicks=0,
                         n_clicks_timestamp=0),
             html.Br(),
+            # html.P(id='set-point-x-text', children='---'),
+            # html.P(id='fit-ref-point-y', children='---'),
+            dcc.Input(
+                id='fit-ref-point-y',
+                placeholder='Ref point',
+                type='str',
+                value=None
+            ),
             dcc.Input(
                 id='fit-start-value',
                 placeholder='Start point',
@@ -137,13 +152,14 @@ app.layout = html.Div([
                 type='str',
                 value=None
             ),
-        ]),
+        ], className='fit-states-box'),
         html.Div([
             html.P('Fit function'),
             dcc.Dropdown(
                 id='fit-function-type',
                 options=[
-                    {'label': 'Moving Average', 'value': 'movingaverage'},
+                    {'label': 'Moving Average P', 'value': 'movingaverage_p'},
+                    {'label': 'Moving Average T', 'value': 'movingaverage_t'},
                     {'label': 'Spline', 'value': 'spline'},
                     {'label': 'Parabola', 'value': 'parabola'},
                     {'label': 'Line', 'value': 'line'}
@@ -175,11 +191,15 @@ app.layout = html.Div([
                         max=config.getint('INPUTS', 'PARAM_2_MAX'),
                         disabled=True)], className='parameter-box')],
                      className='parameters-box'),
-            html.Button('Fit', id='fit-button', n_clicks=0,
-                        n_clicks_timestamp=0),
-            html.Button('Confirm', id='fit-confirm-button',
-                        n_clicks=0, n_clicks_timestamp=0),
-            html.Button('Clear', id='fit-clear-button', n_clicks_timestamp=0)
+            html.Div([
+              html.Button('Fit', id='fit-button', n_clicks=0,
+                          n_clicks_timestamp=0),
+              html.Button('Confirm', id='fit-confirm-button',
+                          n_clicks=0, n_clicks_timestamp=0),
+              html.Button('Save', id='fit-save-button',
+                          n_clicks=0, n_clicks_timestamp=0),
+              html.Button('Clear', id='fit-clear-button', n_clicks_timestamp=0)],
+              className='fit-box')
         ])
     ],
         style={}, className='button-box'),
@@ -196,7 +216,6 @@ app.layout = html.Div([
             max=config.getint('INPUTS', 'BINNING_MAX')),
         html.Button('Set binning', id='set-binning-zoom-button', n_clicks=0,
                     n_clicks_timestamp=0)
-
     ]),
 
     dcc.Location(id='location3', refresh=True),
@@ -223,11 +242,15 @@ app.layout = html.Div([
              style={'display': 'none'}),
     html.Div(id='fitted-function-temp3',
              style={'display': 'none'}),
+    html.Div(id='fitted-function-temp4',
+             style={'display': 'none'}),
     html.Div(id='save-state-temp',
              style={'display': 'none'}),
     html.Div(id='load-state-temp',
              style={'display': 'none'}),
-    html.Div(id='save_output_temp',
+    html.Div(id='save-output-temp',
+             style={'display': 'none'}),
+    html.Div(id='zoom-graph-relayout-temp', children=None,
              style={'display': 'none'}),
     html.Div(id='clear-data', children='value', style={'display': 'none'}),
     html.Div(id='buttons-times', children=None,
@@ -243,8 +266,9 @@ app.layout = html.Div([
 @app.callback(
     Output('buttons-times', 'children'),
     [Input('set-binning-full-button', 'n_clicks_timestamp'),
-     Input('set-point-button', 'n_clicks_timestamp'),
+     Input('zoom-point-button', 'n_clicks_timestamp'),
      Input('load-state-button', 'n_clicks_timestamp'),
+     Input('fit-ref-point-button', 'n_clicks_timestamp'),
      Input('fit-start-value-button', 'n_clicks_timestamp'),
      Input('fit-end-value-button', 'n_clicks_timestamp'),
      Input('fit-button', 'n_clicks_timestamp'),
@@ -256,8 +280,9 @@ app.layout = html.Div([
     [State('buttons-times', 'children')])
 @timeit
 def update_last_clicked_button(*args):
-    buttonNames = ('set-binning-full-button', 'set-point-button',
-                   'load-state-button', 'fit-start-value-button',
+    buttonNames = ('set-binning-full-button', 'zoom-point-button',
+                   'load-state-button', 'fit-ref-point-button',
+                   'fit-start-value-button',
                    'fit-end-value-button',
                    'fit-button', 'fit-confirm-button',
                    'clear-fit-button', 'set-binning-zoom-button',
@@ -288,23 +313,8 @@ def update_global_mean_text(_):
     return 'Global mean value: {:.2f}'.format(global_mean)
 
 
-# @app.callback(Output('window-data-mean-text', 'children'),
-#               [Input('selected-data', 'children'),
-#                Input('all-data-graph', 'relayoutData')])
-# @timeit
-# def update_windows_mean_text(_, relayoutData):
-#     dff = get_activ(sf_trigger)
-#     if relayoutData:
-#         if 'xaxis' in relayoutData:
-#             relayout_xrange = relayoutData['xaxis']
-#             dff = dff[(dff.jd > relayout_xrange[0]) &
-#                       (dff.jd < relayout_xrange[1])]
-
-#     return 'Window mean value: {:.2f}'.format(dff.counts.mean())
-
-
-@app.callback(Output('set-point-x-text', 'children'),
-              [Input('set-point-button', 'n_clicks_timestamp')],
+@app.callback(Output('zoom-point-x-text', 'children'),
+              [Input('zoom-point-button', 'n_clicks_timestamp')],
               [State('all-data-graph', 'clickData')])
 @timeit
 def update_zoom_start_point_x(_, clickData):
@@ -312,25 +322,23 @@ def update_zoom_start_point_x(_, clickData):
     if clickData is not None:
         zoomStartPoint = [clickData['points'][0]['x'],
                           clickData['points'][0]['y']]
-        return '{:.4f}'.format(zoomStartPoint[0])
+        return 'x: {:.4f}'.format(zoomStartPoint[0])
     if len(df.jd) > 0:
-        return '{:.4f}'.format(df.jd.values[0])
-    return '---'
+        return 'x: {:.4f}'.format(df.jd.values[0])
+    return 'x: ---'
 
 
-@app.callback(Output('set-point-y-text', 'children'),
-              [Input('set-point-button', 'n_clicks_timestamp')],
+@app.callback(Output('fit-ref-point-y', 'value'),
+              [Input('fit-ref-point-button', 'n_clicks_timestamp')],
               [State('all-data-graph', 'clickData')])
 @timeit
-def update_zoom_start_point_y(_, clickData):
-    global zoomStartPoint
+def update_ref_point_y(_, clickData):
+    global refPoint
     if clickData is not None:
-        zoomStartPoint = [clickData['points'][0]['x'],
-                          clickData['points'][0]['y']]
-        return '{:.4f}'.format(zoomStartPoint[1])
-    if len(df.jd) > 0:
-        return '{:.4f}'.format(df.counts.values[0])
-    return '---'
+        refPoint = [clickData['points'][0]['x'],
+                    clickData['points'][0]['y']]
+        return '{:.4f}'.format(refPoint[1])
+    return None
 
 
 @app.callback(Output('saved-states-list', 'options'),
@@ -371,7 +379,7 @@ def update_end_point_value(_, clickData):
               [Input('fit-function-type', 'value')])
 @timeit
 def lock_fit_function_parameter_value(fitFunction):
-    if fitFunction in ['spline', 'movingaverage']:
+    if fitFunction in ['spline', 'movingaverage_p', 'movingaverage_t']:
         return False
     return True
 
@@ -380,7 +388,7 @@ def lock_fit_function_parameter_value(fitFunction):
               [Input('fit-function-type', 'value')])
 @timeit
 def lock_fit_function_parameter_value2(fitFunction):
-    if fitFunction in ['movingaverage']:
+    if fitFunction in ['movingaverage_p']:
         return False
     return True
 
@@ -388,7 +396,7 @@ def lock_fit_function_parameter_value2(fitFunction):
 @app.callback(Output('fit-function-parameter-text', 'children'),
               [Input('fit-function-type', 'value')])
 def update_parameter_text(fitFunction):
-    if fitFunction == 'movingaverage':
+    if fitFunction in ['movingaverage_p', 'movingaverage_t']:
         return 'Window'
     elif fitFunction == 'spline':
         return 'Binning'
@@ -399,7 +407,7 @@ def update_parameter_text(fitFunction):
 @app.callback(Output('fit-function-parameter-text2', 'children'),
               [Input('fit-function-type', 'value')])
 def update_parameter_text(fitFunction):
-    if fitFunction == 'movingaverage':
+    if fitFunction in ['movingaverage_p']:
         return 'nSigma'
     else:
         return '---'
@@ -424,9 +432,11 @@ def update_fit_function(_, startFitValue,
         dff = get_activ(sf_trigger)
         dff = dff[(dff.jd > float(startFitValue)) &
                   (dff.jd < float(endFitValue))]
+
         if fitFunction == 'spline':
             dff = get_binned_xy(dff, parameterValue, sf_trigger)
-        if fitFunction == 'movingaverage':
+        if (fitFunction == 'movingaverage_p' or
+                fitFunction == 'movingaverage_t'):
             fit_func = fit_function(dff, fitFunction,
                                     [parameterValue, parameterValue2])
             return []
@@ -439,25 +449,36 @@ def update_fit_function(_, startFitValue,
 
 @app.callback(Output('fit-confirmed', 'children'),
               [Input('fit-confirm-button', 'n_clicks_timestamp')],
-              [State('set-point-y-text', 'children'),
+              [State('fit-ref-point-y', 'value'),
                State('all-data-mean-text', 'children')])
 @timeit
-def confirm_fit_function(_, setPointValue, all_data_mean):
-    global fit_func, sf_trigger, df
+def confirm_fit_function(_, refPointValue, all_data_mean):
+    global confirmed_fit_func, fit_func, sf_trigger, df
 
     if fit_func is not None:
         z, xnew, _, _, func_name, *_ = fit_func
 
-        if func_name == 'movingaverage':
+        if func_name == 'movingaverage_p':
             deactivate_points([z[1].jd])
+        elif func_name == 'movingaverage_t':
+            df.loc[
+                list(z[0].jd.mean().index), 'counts'] -= z[0].counts.mean()
+            if refPointValue is not None:
+                df.loc[
+                    list(z[0].jd.mean().index), 'counts'] += float(
+                        refPointValue)
+            else:
+                df.loc[
+                    list(z[0].jd.mean().index), 'counts'] += get_global_mean(
+                        df, sf_trigger)
         else:
             x = df.jd[
                 (df.jd > float(xnew[0])) & (df.jd < float(xnew[-1]))].values
             y = df.counts[
                 (df.jd > float(xnew[0])) & (df.jd < float(xnew[-1]))].values
 
-            if setPointValue != '---':
-                ynew = y - z(x) + float(setPointValue)
+            if refPointValue is not None:
+                ynew = y - z(x) + float(refPointValue)
             else:
                 ynew = y - z(x) + get_global_mean(df, sf_trigger)
 
@@ -465,8 +486,20 @@ def confirm_fit_function(_, setPointValue, all_data_mean):
                 df.jd < float(xnew[-1]))] = ynew
     sf_trigger += 1
 
+    confirmed_fit_func = fit_func
     fit_func = None
 
+    return time.time()
+
+
+@app.callback(Output('fitted-function-temp4', 'children'),
+              [Input('fit-save-button', 'n_clicks_timestamp')])
+@timeit
+def save_fit_function(_):
+    global confirmed_fit_func, file_name
+    if confirmed_fit_func is not None:
+        FitRecorder.save_output(confirmed_fit_func, 0, 1, 5, fileName)
+    confirmed_fit_func = None
     return time.time()
 
 
@@ -474,8 +507,9 @@ def confirm_fit_function(_, setPointValue, all_data_mean):
               [Input('fit-clear-button', 'n_clicks_timestamp')])
 @timeit
 def clear_fit_function(_):
-    global fit_func
+    global fit_func, confirmed_fit_func
     fit_func = None
+    confirmed_fit_func = None
 
     return time.time()
 
@@ -486,11 +520,12 @@ def clear_fit_function(_):
                Input('all-data-graph', 'relayoutData')],
               [State('input-binning-full', 'value'),
                State('all-data-graph', 'clickData'),
+               State('fit-ref-point-y', 'value'),
                State('fit-start-value', 'value'),
                State('fit-end-value', 'value')])
 @timeit
 def update_all_data_graph(_, buttonsTimes, relayoutData,
-                          binningValue, clickData,
+                          binningValue, clickData, refPointValue,
                           startFitValue, endFitValue):
     global shadow_shape
     dff = get_activ(sf_trigger)
@@ -498,24 +533,28 @@ def update_all_data_graph(_, buttonsTimes, relayoutData,
 
     buttonsTimes, lastClickedButton = load_button_times(buttonsTimes)
 
-    setPointButtonTimes = buttonsTimes['set-point-button']
+    zoomPointButtonTimes = buttonsTimes['zoom-point-button']
     if zoomStartPoint is not None:
-        if setPointButtonTimes[0] > setPointButtonTimes[1]:
+        if zoomPointButtonTimes[0] > zoomPointButtonTimes[1]:
             endPoint = get_from_clicked(
                 dff, buttonsTimes[
-                    lastClickedButton][0], sf_trigger).jd.values[:scattergl_limit][-1]
+                    lastClickedButton][0], sf_trigger).jd.values[
+                :scattergl_limit][-1]
             startPoint = zoomStartPoint[0]
 
             shadow_shape = create_shadow_shape(startPoint, endPoint)
             layout['shapes'].append(shadow_shape)
 
-        elif setPointButtonTimes[0] == setPointButtonTimes[1]:
+        elif zoomPointButtonTimes[0] == zoomPointButtonTimes[1]:
             layout['shapes'].append(shadow_shape)
 
     if startFitValue is not None:
-        layout['shapes'].append(create_line(startFitValue))
+        layout['shapes'].append(create_line(startFitValue, 'vertical'))
     if endFitValue is not None:
-        layout['shapes'].append(create_line(endFitValue))
+        layout['shapes'].append(create_line(endFitValue, 'vertical'))
+    if refPointValue is not None:
+        set_point = float(refPointValue)
+        layout['shapes'].append(create_line(set_point, 'horizontal'))
 
     dff = get_binned_xy(dff, binningValue, sf_trigger)
 
@@ -546,7 +585,8 @@ def update_all_data_graph(_, buttonsTimes, relayoutData,
 @app.callback(Output('zoom-data-graph', 'figure'),
               [Input('data-modification-trigger', 'children'),
                Input('buttons-times', 'children')],
-              [State('zoom-data-graph', 'relayoutData'),
+              [State('zoom-graph-relayout-temp', 'children'),
+               # State('zoom-data-graph', 'relayoutData'),
                State('input-binning-zoom', 'value'),
                State('all-data-graph', 'clickData')])
 @timeit
@@ -559,13 +599,15 @@ def update_zoom_data_graph(_, buttonsTimes,
     relayout_xrange = []
     relayout_yrange = []
     layout = {}
-
     if relayoutData:
-        if 'xaxis.range[0]' in relayoutData:
+        relayoutData = json.loads(relayoutData)
+        if lastClickedButton == 'zoom-point-button':
+            pass
+        elif ('xaxis.range[0]' in relayoutData or
+              'yaxis.range[0]' in relayoutData):
             relayout_xrange = [relayoutData['xaxis.range[0]'],
                                relayoutData['xaxis.range[1]']]
 
-        if 'yaxis.range[0]' in relayoutData:
             relayout_yrange = [relayoutData['yaxis.range[0]'],
                                relayoutData['yaxis.range[1]']]
 
@@ -590,6 +632,23 @@ def update_zoom_data_graph(_, buttonsTimes,
     fig['layout'] = layout
 
     return fig
+
+
+@app.callback(Output('zoom-graph-relayout-temp', 'children'),
+              [Input('zoom-data-graph', 'relayoutData'),
+               Input('buttons-times', 'children')],
+              [State('zoom-graph-relayout-temp', 'children')])
+@timeit
+def zoom_graph_relayout_data_update(relayoutData, buttonsTimes, prevData):
+
+    if (relayoutData is not None) and ('xaxis.range[0]' in relayoutData or
+                                       'yaxis.range[0]' in relayoutData):
+        return json.dumps(relayoutData)
+
+    elif (relayoutData is not None) and ('xaxis.autorange' in relayoutData or
+                                         'yaxis.autorange' in relayoutData):
+        return []
+    return prevData
 
 
 @app.callback(Output('delete-data', 'children'),
@@ -672,7 +731,7 @@ def load_state(_, state):
     return time.time()
 
 
-@app.callback(Output('save_output_temp', 'children'),
+@app.callback(Output('save-output-temp', 'children'),
               [Input('save-output-button', 'n_clicks_timestamp')],
               [State('save-format', 'value')])
 @timeit
@@ -684,7 +743,10 @@ def save_output(_, save_format):
 @timeit
 def deactivate_points(sf):
     points_for_dactiv = list(chain(*sf))
-    df.loc[points_for_dactiv, 'activ'] = 0
+    try:
+        df.loc[points_for_dactiv, 'activ'] = 0
+    except ValueError:
+        pass
 
 
 @timeit
