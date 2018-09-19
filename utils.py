@@ -69,33 +69,34 @@ def open_upload_file(content_string):
 
 
 @timeit
-def fit_function(dff, fitFuntion, parameters=[]):
+def fit_function(dff, fitFunction, parameters=[]):
 
     xnew = np.linspace(dff.jd.min(), dff.jd.max(),
                        num=dff.jd.__len__() * config.getint(
         'MAIN_GRAPH', 'FIT_DENSITY'),
         endpoint=True)
 
-    if fitFuntion == 'line':
+    if fitFunction == 'line':
         z = np.poly1d(np.polyfit(dff.jd, dff.counts, 1))
         ynew = z(xnew)
         yrescale = 1
-    elif fitFuntion == 'parabola':
+    elif fitFunction == 'parabola':
         z = np.poly1d(np.polyfit(dff.jd, dff.counts, 2))
         ynew = z(xnew)
         yrescale = 1
-    elif fitFuntion == 'spline':
+    elif fitFunction == 'spline':
         z = CubicSpline(dff.jd, dff.counts)
         ynew = z(xnew)
         yrescale = 1
-    elif fitFuntion == 'movingaverage':
+    elif (fitFunction == 'movingaverage_p' or
+          fitFunction == 'movingaverage_t'):
         roll_dff = dff.rolling(window=parameters[0], min_periods=1)
         roll_df_mean = roll_dff.mean()[roll_dff.mean().jd > 0]
         xnew = roll_df_mean.jd
         ynew = roll_df_mean.counts
 
-        dff.loc[:, 'median'] = roll_dff.mean().counts
-        dff.loc[:, 'std'] = roll_dff.std().counts
+        dff.loc[:, 'median'] = roll_dff.counts.mean()
+        dff.loc[:, 'std'] = roll_dff.counts.std()
 
         dff_out = dff
         dff_out = dff[(
@@ -105,7 +106,7 @@ def fit_function(dff, fitFuntion, parameters=[]):
         z = [roll_dff, dff_out]
         yrescale = 1
 
-    return [z, xnew, ynew, yrescale, fitFuntion, parameters]
+    return [z, xnew, ynew, yrescale, fitFunction, parameters]
 
 
 @timeit
@@ -127,19 +128,47 @@ def create_shadow_shape(startPoint, endPoint):
 
 
 @timeit
-def create_line(point):
+def create_line(point, line_type):
 
-    line = dict(
-        type='line',
-        xref='x',
-        yref='paper',
-        x0=point,
-        y0=0,
-        x1=point,
-        y1=1,
-        opacity=config.getfloat('MAIN_GRAPH', 'LINE_OPACITY'),
-        line=dict(color=config.get('MAIN_GRAPH', 'LINE_COLOR'),
-                  width=config.getfloat('MAIN_GRAPH', 'LINE_WIDTH')))
+    if line_type == 'vertical':
+        line = dict(
+            type='line',
+            xref='x',
+            yref='paper',
+            x0=point,
+            y0=0,
+            x1=point,
+            y1=1,
+            opacity=config.getfloat(
+                'MAIN_GRAPH', 'LINE_VERTICAL_OPACITY'),
+            line=dict(
+                color=config.get(
+                    'MAIN_GRAPH', 'LINE_VERTICAL_COLOR'),
+                width=config.getfloat(
+                    'MAIN_GRAPH', 'LINE_VERTICAL_WIDTH'),
+                dash=config.get(
+                    'MAIN_GRAPH', 'LINE_VERTICAL_DASH')))
+
+    elif line_type == 'horizontal':
+        line = dict(
+            type='line',
+            xref='paper',
+            yref='y',
+            x0=0,
+            y0=point,
+            x1=1,
+            y1=point,
+            opacity=config.getfloat(
+                'MAIN_GRAPH', 'LINE_HORIZONTAL_OPACITY'),
+            line=dict(
+                color=config.get(
+                    'MAIN_GRAPH', 'LINE_HORIZONTAL_COLOR'),
+                width=config.getfloat(
+                    'MAIN_GRAPH', 'LINE_HORIZONTAL_WIDTH'),
+                dash=config.get(
+                    'MAIN_GRAPH', 'LINE_HORIZONTAL_DASH')))
+    else:
+        line = dict()
 
     return line
 
@@ -155,17 +184,18 @@ def create_function_plot(dff, fit_func):
             'MAIN_GRAPH', 'FIT_POINTS_SIZEMIN'),
             sizemax=config.getfloat('MAIN_GRAPH',
                                     'FIT_POINTS_SIZEMAX')))]
-    if func_name == 'movingaverage':
+    if (func_name == 'movingaverage_p'):
         dff_out = func[1]
 
         functionPlot.append(go.Pointcloud(
             x=dff_out.jd,
             y=dff_out.counts,
-            marker=dict(color=config.get('MAIN_GRAPH', 'FIT_COLOR'),
-                        sizemin=config.getfloat('MAIN_GRAPH',
-                                                'FIT_POINTS_SIZEMIN'),
-                        sizemax=config.getfloat('MAIN_GRAPH',
-                                                'FIT_POINTS_SIZEMAX'))))
+            marker=dict(color=config.get(
+                'MAIN_GRAPH', 'FIT_MOVING_AVERAGE_POINTS_COLOR'),
+                sizemin=config.getfloat('MAIN_GRAPH',
+                                        'FIT_POINTS_SIZEMIN'),
+                sizemax=config.getfloat('MAIN_GRAPH',
+                                        'FIT_POINTS_SIZEMAX'))))
     return functionPlot
 
 
@@ -223,10 +253,29 @@ class StateRecorder:
                 columns=('jd', 'counts', 'errors', 'flags'))
 
         elif save_format == 'txt':
-
             np.savetxt(os.path.join(
                 config.get('STATE', 'OUTPUT_PATH'), file_name),
                 np.c_[dff.jd, dff.counts, dff.errors, dff.flags],
                 fmt='%.6f %.5f %.5f %d')
+
+        return True
+
+
+class FitRecorder:
+    def __init__(self):
+        self.fit_save_path = self.path_create(config.get('FIT',
+                                                         'FIT_OUTPUT_PATH'))
+
+    def path_create(self, save_path):
+        dirname = os.path.dirname(save_path)
+        os.makedirs(dirname, exist_ok=True)
+        return save_path
+
+    def save_output(self, fit_func, start, end, ref_point, file_name):
+        file_name = '_'.join([file_name, 'fits.dat'])
+
+        with open(os.path.join(self.fit_save_path, file_name), 'a') as f:
+            f.write('{}\n'.format(fit_func[0]))
+            f.write('{}; {}; {}\n'.format(start, end, ref_point))
 
         return True
