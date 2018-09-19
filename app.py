@@ -117,7 +117,7 @@ app.layout = html.Div([
                                  {'label': 'txt', 'value': 'txt'}],
                         value='csv')
                 ], className='states-box')
-            ], className="button-states-box")
+            ])
         ]),
         html.Div([
             html.Button('Start', id='fit-start-value-button', n_clicks=0,
@@ -175,13 +175,11 @@ app.layout = html.Div([
                         max=config.getint('INPUTS', 'PARAM_2_MAX'),
                         disabled=True)], className='parameter-box')],
                      className='parameters-box'),
-            html.Div([
             html.Button('Fit', id='fit-button', n_clicks=0,
                         n_clicks_timestamp=0),
             html.Button('Confirm', id='fit-confirm-button',
                         n_clicks=0, n_clicks_timestamp=0),
-            html.Button('Clear', id='fit-clear-button', n_clicks_timestamp=0)],
-                     className='fit-box')
+            html.Button('Clear', id='fit-clear-button', n_clicks_timestamp=0)
         ])
     ],
         style={}, className='button-box'),
