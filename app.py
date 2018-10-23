@@ -93,6 +93,7 @@ app.layout = html.Div([
 
     dcc.Location(id='location2', refresh=True),
     html.Div(id='all-data-mean-text', children=0),
+    html.Div(id='file-name', children=0),
     # html.Div(id='window-data-mean-text'),
     # ALL Data Graph
     dcc.Graph(id='all-data-graph', style={
@@ -178,6 +179,7 @@ app.layout = html.Div([
                         value=config.getint('INPUTS', 'PARAM_1_DEFAULT'),
                         min=config.getint('INPUTS', 'PARAM_1_MIN'),
                         max=config.getint('INPUTS', 'PARAM_1_MAX'),
+                        step=config.getfloat('INPUTS', 'PARAM_1_STEP'),
                         disabled=True)], className='parameter-box'),
                 html.Div([
                     html.P(id='fit-function-parameter-text2',
@@ -189,6 +191,7 @@ app.layout = html.Div([
                         value=config.getint('INPUTS', 'PARAM_2_DEFAULT'),
                         min=config.getint('INPUTS', 'PARAM_2_MIN'),
                         max=config.getint('INPUTS', 'PARAM_2_MAX'),
+                        step=config.getfloat('INPUTS', 'PARAM_2_STEP'),
                         disabled=True)], className='parameter-box')],
                      className='parameters-box'),
             html.Div([
