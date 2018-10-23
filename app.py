@@ -77,7 +77,9 @@ app.layout = html.Div([
         html.Div([
             html.Div([
                 dcc.Upload(id='upload-file',
-                           children=html.Button('Upload File'))],
+                           children=html.Button('Upload File')),
+                html.Div(id='upload-file-name', children=None)
+                ],
                      className='upload-button'),
             dcc.Input(
                 id='input-binning-full',
@@ -353,8 +355,8 @@ def update_saved_states_list(buttonsTimes, _):
     statesDict = []
     for state in states:
         state_str = datetime.strptime(
-            state, 'D%d%m%yT%H%M%S').isoformat().replace('T', ' ')
-        statesDict.append(dict(label=state_str, value=state))
+            state[1], 'D%d%m%yT%H%M%S').isoformat().replace('T', ' ')
+        statesDict.append(dict(label=state_str, value=state[1]))
     return statesDict
 
 
@@ -709,13 +711,22 @@ def upload_file(contents, file_name):
     return time.time()
 
 
+@app.callback(Output('upload-file-name', 'children'),
+              [Input('upload-temp', 'children')])
+@timeit
+def show_upload_file(_):
+    if fileName is not None:
+        return fileName
+
+    return '---'
+
 @app.callback(Output('save-state-temp', 'children'),
               [Input('buttons-times', 'children')])
 @timeit
 def save_state(buttonsTimes):
     buttonsTimes, lastClickedButton = load_button_times(buttonsTimes)
     if lastClickedButton in ['delete-button', 'fit-confirm-button']:
-        stateRecorder.save_state(df)
+        stateRecorder.save_state(df, lastClickedButton)
     return time.time()
 
 

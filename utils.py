@@ -219,10 +219,10 @@ class StateRecorder:
         self.clear_old()
 
     @timeit
-    def save_state(self, dff):
+    def save_state(self, dff, lastClickedButton):
         time_now = time.strftime("D%d%m%yT%H%M%S", time.gmtime())
         dff.to_hdf(self.states_save_path, key=time_now)
-        self.entries.append(time_now)
+        self.entries.append([lastClickedButton, time_now])
 
     @timeit
     def load_state(self, key):
