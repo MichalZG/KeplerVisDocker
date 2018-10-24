@@ -57,6 +57,8 @@ confirmed_fit_func = None
 shadow_shape = None
 zoomStartPoint = None
 refPoint = None
+fit_start_value = None
+fit_end_value = None
 fileName = None
 sf_trigger = 1
 
@@ -95,7 +97,6 @@ app.layout = html.Div([
 
     dcc.Location(id='location2', refresh=True),
     html.Div(id='all-data-mean-text', children=0),
-    html.Div(id='file-name', children=0),
     # html.Div(id='window-data-mean-text'),
     # ALL Data Graph
     dcc.Graph(id='all-data-graph', style={
@@ -319,10 +320,11 @@ def update_global_mean_text(_):
 
 
 @app.callback(Output('zoom-point-x-text', 'children'),
-              [Input('zoom-point-button', 'n_clicks_timestamp')],
+              [Input('zoom-point-button', 'n_clicks_timestamp'),
+               Input('upload-file-name', 'children')],
               [State('all-data-graph', 'clickData')])
 @timeit
-def update_zoom_start_point_x(_, clickData):
+def update_zoom_start_point_x(_, _2, clickData):
     global zoomStartPoint
     if clickData is not None:
         zoomStartPoint = [clickData['points'][0]['x'],
@@ -334,10 +336,11 @@ def update_zoom_start_point_x(_, clickData):
 
 
 @app.callback(Output('fit-ref-point-y', 'value'),
-              [Input('fit-ref-point-button', 'n_clicks_timestamp')],
+              [Input('fit-ref-point-button', 'n_clicks_timestamp'),
+               Input('upload-file-name', 'children')],
               [State('all-data-graph', 'clickData')])
 @timeit
-def update_ref_point_y(_, clickData):
+def update_ref_point_y(_, _2, clickData):
     global refPoint
     if clickData is not None:
         refPoint = [clickData['points'][0]['x'],
@@ -766,7 +769,7 @@ def deactivate_points(sf):
 @timeit
 def reload_all():
     global df, sf, fit_func, shadow_shape, stateRecorder
-    global shadow_shape, zoomStartPoint, sf_trigger
+    global shadow_shape, zoomStartPoint, sf_trigger, refPoint
 
     df = pd.DataFrame(
         data={'jd': [], 'counts': [], 'err': [],
@@ -776,6 +779,9 @@ def reload_all():
     fit_func = None
     shadow_shape = None
     zoomStartPoint = None
+    refPoint = None
+    fit_start_value = None
+    fit_end_value = None
     fileName = None
     sf_trigger += 1
 
@@ -794,7 +800,7 @@ def get_binned_xy(dff, binningValue, sf_trigger):
             pd.cut(
                 dff.index, dff.index.__len__() // binningValue)
         ).mean().dropna()
-        groups['jd'] = [i.left for i in groups.index.values]
+        # groups['jd'] = [i.left for i in groups.index.values]
 
         return groups
     return dff
