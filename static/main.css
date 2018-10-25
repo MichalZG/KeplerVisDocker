@@ -26,6 +26,14 @@ body{
   flex-direction: row;
 }
 
+.Select-control{
+	width:150px;
+}
+
+.Select-value{
+	width:150px;
+}
+
 .upload-button{
 	float: right;
 }
