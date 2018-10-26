@@ -63,7 +63,7 @@ div#saved-states-list{
   width: 80px;
 }
 
-.button-states-box .Select-control {
+.button-states-box.Select-control {
   width: 80px;
   height: 38px;
   padding: 0;

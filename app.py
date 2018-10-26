@@ -358,7 +358,8 @@ def update_saved_states_list(buttonsTimes, _):
     statesDict = []
     for state in states:
         state_str = datetime.strptime(
-            state[1], 'D%d%m%yT%H%M%S').isoformat().replace('T', ' ')
+            state[1], 'D%d%m%yT%H%M%S').isoformat()
+        state_str = state_str.split('T')[1]
         statesDict.append(dict(label=state_str, value=state[1]))
     return statesDict
 
