@@ -372,7 +372,7 @@ def update_start_point_value(_, clickData):
     global fit_start_value
     if clickData is not None:
         fit_start_value = float(clickData['points'][0]['x'])
-        return '{:.4f}'.format(clickData['points'][0]['x'])
+        return '{:.4f}'.format(fit_start_value)
     return None
 
 
@@ -384,7 +384,7 @@ def update_end_point_value(_, clickData):
     global fit_end_value
     if clickData is not None:
         fit_end_value = float(clickData['points'][0]['x'])
-        return '{:.4f}'.format(clickData['points'][0]['x'])
+        return '{:.4f}'.format(fit_end_value)
     return None
 
 
