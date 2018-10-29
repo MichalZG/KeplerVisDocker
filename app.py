@@ -369,7 +369,9 @@ def update_saved_states_list(buttonsTimes, _):
               [State('all-data-graph', 'clickData')])
 @timeit
 def update_start_point_value(_, clickData):
+    global fit_start_value
     if clickData is not None:
+        fit_start_value = float(clickData['points'][0]['x'])
         return '{:.4f}'.format(clickData['points'][0]['x'])
     return None
 
@@ -379,7 +381,9 @@ def update_start_point_value(_, clickData):
               [State('all-data-graph', 'clickData')])
 @timeit
 def update_end_point_value(_, clickData):
+    global fit_end_value
     if clickData is not None:
+        fit_end_value = float(clickData['points'][0]['x'])
         return '{:.4f}'.format(clickData['points'][0]['x'])
     return None
 
@@ -424,23 +428,19 @@ def update_parameter_text(fitFunction):
 
 @app.callback(Output('fitted-function-temp', 'children'),
               [Input('fit-button', 'n_clicks_timestamp')],
-              [State('fit-start-value', 'value'),
-               State('fit-end-value', 'value'),
-               State('fit-function-type', 'value'),
+              [State('fit-function-type', 'value'),
                State('input-function-parameter', 'value'),
                State('input-function-parameter2', 'value')])
 @timeit
-def update_fit_function(_, startFitValue,
-                        endFitValue, fitFunction,
+def update_fit_function(_,fitFunction,
                         parameterValue, parameterValue2):
-    global fit_func
-    if startFitValue is not None and endFitValue is not None:
-        startFitValue, endFitValue = float(startFitValue), float(endFitValue)
-        if startFitValue > endFitValue:
-            startFitValue, endFitValue = endFitValue, startFitValue
+    global fit_func, fit_start_value, fit_end_value
+    if fit_start_value is not None and fit_end_value is not None:
+        if fit_start_value > fit_end_value:
+            fit_start_value, fit_end_value = fit_end_value, fit_start_value
         dff = get_activ(sf_trigger)
-        dff = dff[(dff.jd > float(startFitValue)) &
-                  (dff.jd < float(endFitValue))]
+        dff = dff[(dff.jd >= fit_start_value) &
+                  (dff.jd <= fit_end_value)]
 
         if fitFunction == 'spline':
             dff = get_binned_xy(dff, parameterValue, sf_trigger)
@@ -463,6 +463,7 @@ def update_fit_function(_, startFitValue,
 @timeit
 def confirm_fit_function(_, refPointValue, all_data_mean):
     global confirmed_fit_func, fit_func, sf_trigger, df
+    global fit_start_value, fit_end_value
 
     if fit_func is not None:
         z, xnew, _, _, func_name, *_ = fit_func
@@ -482,17 +483,17 @@ def confirm_fit_function(_, refPointValue, all_data_mean):
                         df, sf_trigger)
         else:
             x = df.jd[
-                (df.jd > float(xnew[0])) & (df.jd < float(xnew[-1]))].values
+                (df.jd >= float(xnew[0])) & (df.jd <= float(xnew[-1]))].values
             y = df.counts[
-                (df.jd > float(xnew[0])) & (df.jd < float(xnew[-1]))].values
+                (df.jd >= float(xnew[0])) & (df.jd <= float(xnew[-1]))].values
 
             if refPointValue is not None:
                 ynew = y - z(x) + float(refPointValue)
             else:
                 ynew = y - z(x) + get_global_mean(df, sf_trigger)
 
-            df.counts[(df.jd > float(xnew[0])) & (
-                df.jd < float(xnew[-1]))] = ynew
+            df.counts[(df.jd >= float(xnew[0])) & (
+                df.jd <= float(xnew[-1]))] = ynew
     sf_trigger += 1
 
     confirmed_fit_func = fit_func
