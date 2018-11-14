@@ -90,7 +90,8 @@ def fit_function(dff, fitFunction, parameters=[]):
         yrescale = 1
     elif (fitFunction == 'movingaverage_p' or
           fitFunction == 'movingaverage_t'):
-        roll_dff = dff.rolling(window=parameters[0], min_periods=1)
+        roll_dff = dff.copy().rolling(window=parameters[0],
+            min_periods=1, center=True)
         roll_df_mean = roll_dff.mean()[roll_dff.mean().jd > 0]
         xnew = roll_df_mean.jd
         ynew = roll_df_mean.counts
@@ -98,10 +99,9 @@ def fit_function(dff, fitFunction, parameters=[]):
         dff.loc[:, 'median'] = roll_dff.counts.mean()
         dff.loc[:, 'std'] = roll_dff.counts.std()
 
-        dff_out = dff
         dff_out = dff[(
-            dff.counts >= dff['median'] + parameters[1] * dff['std']) | (
-            dff.counts <= dff['median'] - parameters[1] * dff['std'])]
+            dff.counts >= dff['median'] + (parameters[1] * dff['std'])) | (
+            dff.counts <= dff['median'] - (parameters[1] * dff['std']))]
 
         z = [roll_dff, dff_out]
         yrescale = 1
