@@ -581,6 +581,8 @@ def update_all_data_graph(_, buttonsTimes, relayoutData,
                            title='Time [JD - {}]'.format(start_date_int))
     layout['yaxis'] = dict(range=relayout_yrange, title='Counts')
 
+    layout['showlegend'] = False
+
     fig = get_full_graph(dff.jd, dff.counts, sf_trigger)
     fig['layout'] = layout
 
@@ -624,6 +626,9 @@ def update_zoom_data_graph(_, buttonsTimes,
     layout['xaxis'] = dict(range=relayout_xrange,
                            title='Time [JD - {}]'.format(start_date_int))
     layout['yaxis'] = dict(range=relayout_yrange, title='Counts')
+    
+    layout['dragmode'] = config.get('ZOOM_GRAPH', 'DEFAULT_TOOL')
+    layout['showlegend'] = False
 
     if zoomStartPoint is not None:
         dff = get_from_clicked(
