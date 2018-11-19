@@ -56,9 +56,12 @@ fit_func = None
 confirmed_fit_func = None
 shadow_shape = None
 zoomStartPoint = None
-refPoint = None
-fit_start_value = None
-fit_end_value = None
+refPoint_x = None
+fit_start_value_x = None
+fit_end_value_x = None
+refPoint_y = None
+fit_start_value_y = None
+fit_end_value_y = None
 fileName = None
 sf_trigger = 1
 
@@ -97,8 +100,8 @@ app.layout = html.Div([
 
     dcc.Location(id='location2', refresh=True),
     html.Div(id='all-data-mean-text', children=0),
-    # html.Div(id='window-data-mean-text'),
-    # ALL Data Graph
+    html.P('Points between start-end'),
+    html.Div(id='n-points-day', children=0),
     dcc.Graph(id='all-data-graph', style={
         'height': config.getint('MAIN_GRAPH', 'HEIGHT')}),
 
@@ -135,24 +138,43 @@ app.layout = html.Div([
                         n_clicks_timestamp=0),
             html.Button('End', id='fit-end-value-button', n_clicks=0,
                         n_clicks_timestamp=0),
+            html.Button('Refresh', id='refresh-graph-button', n_clicks=0,
+                        n_clicks_timestamp=0),
             html.Br(),
-            # html.P(id='set-point-x-text', children='---'),
-            # html.P(id='fit-ref-point-y', children='---'),
+            dcc.Input(
+                id='fit-ref-point-x',
+                placeholder='Ref point x',
+                type='str',
+                value=None
+            ),
+            dcc.Input(
+                id='fit-start-value-x',
+                placeholder='Start point x',
+                type='str',
+                value=None
+            ),
+            dcc.Input(
+                id='fit-end-value-x',
+                placeholder='End point x',
+                type='str',
+                value=None
+            ),
+            html.Br(),
             dcc.Input(
                 id='fit-ref-point-y',
-                placeholder='Ref point',
+                placeholder='Ref point y',
                 type='str',
                 value=None
             ),
             dcc.Input(
-                id='fit-start-value',
-                placeholder='Start point',
+                id='fit-start-value-y',
+                placeholder='Start point y',
                 type='str',
                 value=None
             ),
             dcc.Input(
-                id='fit-end-value',
-                placeholder='End point',
+                id='fit-end-value-y',
+                placeholder='End point y',
                 type='str',
                 value=None
             ),
@@ -211,7 +233,7 @@ app.layout = html.Div([
         style={}, className='button-box'),
 
     html.Hr(),
-
+    html.Div([
     html.Div([
         dcc.Input(
             id='input-binning-zoom',
@@ -221,8 +243,10 @@ app.layout = html.Div([
             min=0,
             max=config.getint('INPUTS', 'BINNING_MAX')),
         html.Button('Set binning', id='set-binning-zoom-button', n_clicks=0,
-                    n_clicks_timestamp=0)
-    ]),
+                    n_clicks_timestamp=0),
+    html.Button('Delete', id='delete-button', n_clicks=0,
+                n_clicks_timestamp=0),
+    ])], className='zoom-data-control-box'),
 
     dcc.Location(id='location3', refresh=True),
 
@@ -230,9 +254,7 @@ app.layout = html.Div([
     dcc.Graph(id='zoom-data-graph', style={
         'height': config.getint('ZOOM_GRAPH', 'HEIGHT')}),
 
-    # buttons
-    html.Button('Delete', id='delete-button', n_clicks=0,
-                n_clicks_timestamp=0),
+
 
     html.Div(id='all-data', children='value', style={'display': 'none'}),
     html.Div(id='delete-data', children=0, style={'display': 'none'}),
@@ -258,6 +280,8 @@ app.layout = html.Div([
              style={'display': 'none'}),
     html.Div(id='zoom-graph-relayout-temp', children=None,
              style={'display': 'none'}),
+    html.Div(id='refresh-graph-button-temp',
+             style={'display': 'none'}),
     html.Div(id='clear-data', children='value', style={'display': 'none'}),
     html.Div(id='buttons-times', children=None,
              style={'display': 'none'}),
@@ -282,6 +306,7 @@ app.layout = html.Div([
      Input('fit-clear-button', 'n_clicks_timestamp'),
      Input('set-binning-zoom-button', 'n_clicks_timestamp'),
      Input('delete-button', 'n_clicks_timestamp'),
+     Input('refresh-graph-button', 'n_clicks_timestamp')
      ],
     [State('buttons-times', 'children')])
 @timeit
@@ -292,7 +317,7 @@ def update_last_clicked_button(*args):
                    'fit-end-value-button',
                    'fit-button', 'fit-confirm-button',
                    'clear-fit-button', 'set-binning-zoom-button',
-                   'delete-button',
+                   'delete-button', 'refresh-graph-button',
                    # 'reload-button', 'download-button'
                    )
 
@@ -319,12 +344,34 @@ def update_global_mean_text(_):
     return 'Global mean value: {:.2f}'.format(global_mean)
 
 
+@app.callback(Output('n-points-day', 'children'),
+              [Input('data-modification-trigger', 'children'),
+               Input('buttons-times', 'children')])
+@timeit
+def update_n_points_day_between(_, _2):
+    global fit_start_value_x, fit_end_value_x
+
+    if (fit_start_value_x is not None) and (fit_end_value_x is not None):
+        if fit_start_value_x > fit_end_value_x:
+            fit_start_value_x, fit_end_value_x = fit_end_value_x, fit_start_value_x
+
+        dff = get_activ(sf_trigger)
+        dff = dff[(dff.jd >= fit_start_value_x) &
+                  (dff.jd <= fit_end_value_x)]
+        if dff.jd.__len__() > 0:
+            days = dff.jd.values[-1] - dff.jd.values[0]
+        else:
+            days = 1
+
+        return 'n: {:d};    n/day: {:.1f}'.format(dff.jd.__len__(), 
+                                                                dff.jd.__len__() / days)
+    return 'n: ---;    n/day: ---'
+
 @app.callback(Output('zoom-point-x-text', 'children'),
-              [Input('zoom-point-button', 'n_clicks_timestamp'),
-               Input('upload-file-name', 'children')],
+              [Input('zoom-point-button', 'n_clicks_timestamp')],
               [State('all-data-graph', 'clickData')])
 @timeit
-def update_zoom_start_point_x(_, _2, clickData):
+def update_zoom_start_point_x(_, clickData):
     global zoomStartPoint
     if clickData is not None:
         zoomStartPoint = [clickData['points'][0]['x'],
@@ -333,20 +380,6 @@ def update_zoom_start_point_x(_, _2, clickData):
     if len(df.jd) > 0:
         return 'x: {:.4f}'.format(df.jd.values[0])
     return 'x: ---'
-
-
-@app.callback(Output('fit-ref-point-y', 'value'),
-              [Input('fit-ref-point-button', 'n_clicks_timestamp'),
-               Input('upload-file-name', 'children')],
-              [State('all-data-graph', 'clickData')])
-@timeit
-def update_ref_point_y(_, _2, clickData):
-    global refPoint
-    if clickData is not None:
-        refPoint = [clickData['points'][0]['x'],
-                    clickData['points'][0]['y']]
-        return '{:.4f}'.format(refPoint[1])
-    return None
 
 
 @app.callback(Output('saved-states-list', 'options'),
@@ -363,29 +396,93 @@ def update_saved_states_list(buttonsTimes, _):
         statesDict.append(dict(label=state_str, value=state[1]))
     return statesDict
 
+@app.callback(Output('fit-ref-point-x', 'value'),
+              [Input('fit-ref-point-button', 'n_clicks_timestamp')],
+              [State('all-data-graph', 'clickData')])
+@timeit
+def update_ref_point_x(_, clickData):
+    global refPoint_x
+    if clickData is not None:
+        refPoint_x = clickData['points'][0]['x']
+        return '{:.4f}'.format(refPoint_x)
+    return None
 
-@app.callback(Output('fit-start-value', 'value'),
+
+@app.callback(Output('fit-ref-point-y', 'value'),
+              [Input('fit-ref-point-button', 'n_clicks_timestamp')],
+              [State('all-data-graph', 'clickData')])
+@timeit
+def update_ref_point_y(_, clickData):
+    global refPoint_y
+    if clickData is not None:
+        refPoint_y = clickData['points'][0]['y']
+        return '{:.4f}'.format(refPoint_y)
+    return None
+
+
+@app.callback(Output('fit-start-value-x', 'value'),
               [Input('fit-start-value-button', 'n_clicks_timestamp')],
               [State('all-data-graph', 'clickData')])
 @timeit
-def update_start_point_value(_, clickData):
-    global fit_start_value
+def update_start_point_value_x(_, clickData):
+    global fit_start_value_x
     if clickData is not None:
-        fit_start_value = float(clickData['points'][0]['x'])
-        return '{:.4f}'.format(fit_start_value)
+        fit_start_value_x = float(clickData['points'][0]['x'])
+        return '{:.4f}'.format(fit_start_value_x)
     return None
 
 
-@app.callback(Output('fit-end-value', 'value'),
+@app.callback(Output('fit-end-value-x', 'value'),
               [Input('fit-end-value-button', 'n_clicks_timestamp')],
               [State('all-data-graph', 'clickData')])
 @timeit
-def update_end_point_value(_, clickData):
-    global fit_end_value
+def update_end_point_value_x(_, clickData):
+    global fit_end_value_x
     if clickData is not None:
-        fit_end_value = float(clickData['points'][0]['x'])
-        return '{:.4f}'.format(fit_end_value)
+        fit_end_value_x = float(clickData['points'][0]['x'])
+        return '{:.4f}'.format(fit_end_value_x)
     return None
+
+@app.callback(Output('fit-start-value-y', 'value'),
+              [Input('fit-start-value-button', 'n_clicks_timestamp')],
+              [State('all-data-graph', 'clickData')])
+@timeit
+def update_start_point_value_y(_, clickData):
+    global fit_start_value_y
+    if clickData is not None:
+        fit_start_value_y = float(clickData['points'][0]['y'])
+        return '{:.4f}'.format(fit_start_value_y)
+    return None
+
+
+@app.callback(Output('fit-end-value-y', 'value'),
+              [Input('fit-end-value-button', 'n_clicks_timestamp')],
+              [State('all-data-graph', 'clickData')])
+@timeit
+def update_end_point_value_y(_, clickData):
+    global fit_end_value_y
+    if clickData is not None:
+        fit_end_value_y = float(clickData['points'][0]['y'])
+        return '{:.4f}'.format(fit_end_value_y)
+    return None
+
+
+@app.callback(Output('refresh-graph-button-temp', 'value'),
+              [Input('refresh-graph-button', 'n_clicks_timestamp')],
+              [State('fit-ref-point-y', 'value'),
+               State('fit-start-value-x', 'value'),
+               State('fit-end-value-x', 'value')])
+@timeit
+def refresh_graph(_, _fit_ref_point_y, _fit_start_value_x, _fit_end_value_x):
+    global fit_ref_point_y, fit_start_value_x, fit_end_value_x
+    if _fit_ref_point_y is not None:
+        fit_ref_point_y = float(_fit_ref_point_y)
+    if fit_start_value_x is not None:
+        fit_start_value_x = float(_fit_start_value_x)
+    if fit_end_value_x is not None:
+        fit_end_value_x = float(_fit_end_value_x)
+
+    return time.time()
 
 
 @app.callback(Output('input-function-parameter', 'disabled'),
@@ -434,13 +531,13 @@ def update_parameter_text(fitFunction):
 @timeit
 def update_fit_function(_,fitFunction,
                         parameterValue, parameterValue2):
-    global fit_func, fit_start_value, fit_end_value
-    if fit_start_value is not None and fit_end_value is not None:
-        if fit_start_value > fit_end_value:
-            fit_start_value, fit_end_value = fit_end_value, fit_start_value
+    global fit_func, fit_start_value_x, fit_end_value_x
+    if fit_start_value_x is not None and fit_end_value_x is not None:
+        if fit_start_value_x > fit_end_value_x:
+            fit_start_value_x, fit_end_value_x = fit_end_value_x, fit_start_value_x
         dff = get_activ(sf_trigger)
-        dff = dff[(dff.jd >= fit_start_value) &
-                  (dff.jd <= fit_end_value)]
+        dff = dff[(dff.jd >= fit_start_value_x) &
+                  (dff.jd <= fit_end_value_x)]
 
         if fitFunction == 'spline':
             dff = get_binned_xy(dff, parameterValue, sf_trigger)
@@ -463,7 +560,7 @@ def update_fit_function(_,fitFunction,
 @timeit
 def confirm_fit_function(_, refPointValue, all_data_mean):
     global confirmed_fit_func, fit_func, sf_trigger, df
-    global fit_start_value, fit_end_value
+    global fit_start_value_x, fit_end_value_x
 
     if fit_func is not None:
         z, xnew, _, _, func_name, *_ = fit_func
@@ -531,8 +628,8 @@ def clear_fit_function(_):
               [State('input-binning-full', 'value'),
                State('all-data-graph', 'clickData'),
                State('fit-ref-point-y', 'value'),
-               State('fit-start-value', 'value'),
-               State('fit-end-value', 'value')])
+               State('fit-start-value-x', 'value'),
+               State('fit-end-value-x', 'value')])
 @timeit
 def update_all_data_graph(_, buttonsTimes, relayoutData,
                           binningValue, clickData, refPointValue,
@@ -562,8 +659,11 @@ def update_all_data_graph(_, buttonsTimes, relayoutData,
         layout['shapes'].append(create_line(startFitValue, 'vertical'))
     if endFitValue is not None:
         layout['shapes'].append(create_line(endFitValue, 'vertical'))
-    if refPointValue is not None:
-        set_point = float(refPointValue)
+    if (refPointValue is not None) and (refPointValue != ''):
+        try:
+            set_point = float(refPointValue)
+        except ValueError:
+            logger.warning('Wrong ref point format')
         layout['shapes'].append(create_line(set_point, 'horizontal'))
 
     dff = get_binned_xy(dff, binningValue, sf_trigger)
@@ -626,7 +726,7 @@ def update_zoom_data_graph(_, buttonsTimes,
     layout['xaxis'] = dict(range=relayout_xrange,
                            title='Time [JD - {}]'.format(start_date_int))
     layout['yaxis'] = dict(range=relayout_yrange, title='Counts')
-    
+
     layout['dragmode'] = config.get('ZOOM_GRAPH', 'DEFAULT_TOOL')
     layout['showlegend'] = False
 
@@ -776,7 +876,9 @@ def deactivate_points(sf):
 @timeit
 def reload_all():
     global df, sf, fit_func, shadow_shape, stateRecorder
-    global shadow_shape, zoomStartPoint, sf_trigger, refPoint
+    global shadow_shape, zoomStartPoint, sf_trigger
+    global refPoint_x, refPoint_y, fit_start_value_x, fit_start_value_y
+    global fit_end_value_x, fit_end_value_y
 
     df = pd.DataFrame(
         data={'jd': [], 'counts': [], 'err': [],
@@ -786,9 +888,12 @@ def reload_all():
     fit_func = None
     shadow_shape = None
     zoomStartPoint = None
-    refPoint = None
-    fit_start_value = None
-    fit_end_value = None
+    refPoint_x = None
+    refPoint_y = None
+    fit_start_value_x = None
+    fit_start_value_y = None
+    fit_end_value_x = None
+    fit_end_value_y = None
     fileName = None
     sf_trigger += 1
 

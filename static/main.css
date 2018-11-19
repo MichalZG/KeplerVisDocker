@@ -83,24 +83,43 @@ div#saved-states-list{
 	width: 100px;
 	margin: 2px;
 }
+#fit-ref-point-x{
+  width: 93px;
+  height: 30px;
+  margin: 2px;
+  padding-left: 2px;
+}
+#fit-start-value-x{
+	width: 93px;
+	height: 30px;
+	margin: 2px;
+	padding-left: 2px;
+}
+#fit-end-value-x{
+	width: 93px;
+	height: 30px;
+	margin: 2px;
+	padding-left: 2px;
+}
 #fit-ref-point-y{
   width: 93px;
   height: 30px;
   margin: 2px;
   padding-left: 2px;
 }
-#fit-start-value{
-	width: 93px;
-	height: 30px;
-	margin: 2px;
-	padding-left: 2px;
+#fit-start-value-y{
+  width: 93px;
+  height: 30px;
+  margin: 2px;
+  padding-left: 2px;
 }
-#fit-end-value{
-	width: 93px;
-	height: 30px;
-	margin: 2px;
-	padding-left: 2px;
+#fit-end-value-y{
+  width: 93px;
+  height: 30px;
+  margin: 2px;
+  padding-left: 2px;
 }
+
 
 #fit-function-type{
 	width: 20px;
@@ -177,11 +196,22 @@ div#saved-states-list{
   margin:  0;
 }
 
+
+
 div#fit-function-type .Select.has-value.is-clearable.is-searchable.Select--single {
   width: 242px !important;
   margin: 2px !important;
   bottom: -15px;
 }
+
+.zoom-data-control-box{
+  display: flex;
+}
+
+button#delee-button{
+  float: right;
+}
+
 
 ._dash-undo-redo {
   display: none;
