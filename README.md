@@ -13,7 +13,7 @@ sudo usermod -aG docker $USER
 ```
 git clone https://github.com/MichalZG/KeplerVisDocker.git
 ```
-### 4) Enter to directory and run command:
+### 4) Enter a directory and run command:
 ```
 docker-compose up
 ```
