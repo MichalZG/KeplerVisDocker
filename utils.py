@@ -108,6 +108,12 @@ def fit_function(dff, fitFunction, parameters=[]):
 
         z = [roll_dff, dff_out]
         yrescale = 1
+    elif fitFunction == 'shift':
+        z = None
+        xnew = dff.jd.values
+        ynew = dff.counts + parameters[0]
+        ynew = ynew.values
+        yrescale = 1
 
     return [z, xnew, ynew, yrescale, fitFunction, parameters]
 
