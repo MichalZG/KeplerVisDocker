@@ -188,7 +188,8 @@ app.layout = html.Div([
                     {'label': 'Moving Average T', 'value': 'movingaverage_t'},
                     {'label': 'Spline', 'value': 'spline'},
                     {'label': 'Parabola', 'value': 'parabola'},
-                    {'label': 'Line', 'value': 'line'}
+                    {'label': 'Line', 'value': 'line'},
+                    {'label': 'Shift', 'value': 'shift'}
                 ],
                 value='line'
             ),
@@ -489,7 +490,7 @@ def refresh_graph(_, _fit_ref_point_y, _fit_start_value_x, _fit_end_value_x):
               [Input('fit-function-type', 'value')])
 @timeit
 def lock_fit_function_parameter_value(fitFunction):
-    if fitFunction in ['spline', 'movingaverage_p', 'movingaverage_t']:
+    if fitFunction in ['spline', 'movingaverage_p', 'movingaverage_t', 'shift']:
         return False
     return True
 
@@ -510,13 +511,15 @@ def update_parameter_text(fitFunction):
         return 'Window'
     elif fitFunction == 'spline':
         return 'Binning'
+    elif fitFunction == 'shift':
+        return 'Shift'
     else:
         return '---'
 
 
 @app.callback(Output('fit-function-parameter-text2', 'children'),
               [Input('fit-function-type', 'value')])
-def update_parameter_text(fitFunction):
+def update_parameter_text2(fitFunction):
     if fitFunction in ['movingaverage_p']:
         return 'nSigma'
     else:
@@ -545,6 +548,9 @@ def update_fit_function(_,fitFunction,
                 fitFunction == 'movingaverage_t'):
             fit_func = fit_function(dff, fitFunction,
                                     [parameterValue, parameterValue2])
+        if fitFunction == 'shift':
+            fit_func = fit_function(dff, fitFunction,
+                                    [parameterValue, None])
             return []
 
         fit_func = fit_function(dff, fitFunction)
@@ -563,7 +569,7 @@ def confirm_fit_function(_, refPointValue, all_data_mean):
     global fit_start_value_x, fit_end_value_x
 
     if fit_func is not None:
-        z, xnew, _, _, func_name, *_ = fit_func
+        z, xnew, ynew, _, func_name, *_ = fit_func
 
         if func_name == 'movingaverage_p':
             deactivate_points([z[1].jd])
@@ -578,6 +584,9 @@ def confirm_fit_function(_, refPointValue, all_data_mean):
                 df.loc[
                     list(z[0].jd.mean().index), 'counts'] += get_global_mean(
                         df, sf_trigger)
+        elif func_name == 'shift':
+            df.counts[(df.jd >= float(xnew[0])) & (
+                df.jd <= float(xnew[-1]))] = ynew
         else:
             x = df.jd[
                 (df.jd >= float(xnew[0])) & (df.jd <= float(xnew[-1]))].values
