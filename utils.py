@@ -54,12 +54,15 @@ def timeit(method):
 
 @timeit
 def open_upload_file(content_string):
-    df = pd.read_fwf(io.StringIO(
+    df = pd.read_csv(io.StringIO(
         base64.b64decode(content_string).decode('utf-8')),
         usecols=[int(x) - 1 for x in config.get(
             'FILES', 'USE_COLUMNS').split(',')],
-        names=config.get('FILES', 'COLUMNS_NAMES').split(','))
+        names=config.get('FILES', 'COLUMNS_NAMES').split(','),
+        delim_whitespace=True)
     start_date_int = config.getfloat('FILES', 'START_JD')
+    if df.jd[0] > 2450000.0:
+        start_date_int += 2450000.0
     df.jd -= start_date_int
     df = df.set_index('jd')
     df = df.assign(jd=df.index)
