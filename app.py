@@ -586,7 +586,7 @@ def confirm_fit_function(_, refPointValue, all_data_mean):
                         df, sf_trigger)
         elif func_name == 'shift':
             df.counts[(df.jd >= float(xnew[0])) & (
-                df.jd <= float(xnew[-1]))] = ynew
+                df.jd <= float(xnew[-1])) & df.activ == 1] = ynew
         else:
             x = df.jd[
                 (df.jd >= float(xnew[0])) & (df.jd <= float(xnew[-1]))].values
