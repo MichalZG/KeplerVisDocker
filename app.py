@@ -364,8 +364,8 @@ def update_n_points_day_between(_, _2):
         else:
             days = 1
 
-        return 'n: {:d};    n/day: {:.1f}'.format(dff.jd.__len__(), 
-                                                                dff.jd.__len__() / days)
+        return 'n: {:d};    n/day: {:.1f}'.format(dff.jd.__len__(),
+            dff.jd.__len__() / days)
     return 'n: ---;    n/day: ---'
 
 @app.callback(Output('zoom-point-x-text', 'children'),
@@ -490,7 +490,8 @@ def refresh_graph(_, _fit_ref_point_y, _fit_start_value_x, _fit_end_value_x):
               [Input('fit-function-type', 'value')])
 @timeit
 def lock_fit_function_parameter_value(fitFunction):
-    if fitFunction in ['spline', 'movingaverage_p', 'movingaverage_t', 'shift']:
+    if fitFunction in ['spline', 'movingaverage_p',
+                       'movingaverage_t', 'shift']:
         return False
     return True
 
@@ -534,6 +535,8 @@ def update_parameter_text2(fitFunction):
 @timeit
 def update_fit_function(_,fitFunction,
                         parameterValue, parameterValue2):
+
+    logger.warning(fitFunction)
     global fit_func, fit_start_value_x, fit_end_value_x
     if fit_start_value_x is not None and fit_end_value_x is not None:
         if fit_start_value_x > fit_end_value_x:
@@ -544,13 +547,13 @@ def update_fit_function(_,fitFunction,
 
         if fitFunction == 'spline':
             dff = get_binned_xy(dff, parameterValue, sf_trigger)
-        if (fitFunction == 'movingaverage_p' or
-                fitFunction == 'movingaverage_t'):
+        if (fitFunction == 'movingaverage_p' or fitFunction == 'movingaverage_t'):
             fit_func = fit_function(dff, fitFunction,
-                                    [parameterValue, parameterValue2])
+                [parameterValue, parameterValue2])
+            return []
         if fitFunction == 'shift':
             fit_func = fit_function(dff, fitFunction,
-                                    [parameterValue, None])
+                [parameterValue, None])
             return []
 
         fit_func = fit_function(dff, fitFunction)
