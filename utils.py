@@ -94,9 +94,9 @@ def fit_function(dff, fitFunction, parameters=[]):
     elif (fitFunction == 'movingaverage_p' or
           fitFunction == 'movingaverage_t'):
         roll_dff = dff.copy().rolling(window=parameters[0],
-            min_periods=1, center=True)
+            min_periods=1, center=True) 
         roll_df_mean = roll_dff.mean()[roll_dff.mean().jd > 0]
-        xnew = roll_df_mean.jd
+        xnew = roll_df_mean.index
         ynew = roll_df_mean.counts
 
         dff.loc[:, 'median'] = roll_dff.counts.mean()
