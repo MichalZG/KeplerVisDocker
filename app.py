@@ -3,7 +3,6 @@ import dash_core_components as dcc
 import dash
 import logging
 
-# import dash_table_experiments as dte
 from dash.dependencies import Input, Output, State
 import plotly.graph_objs as go
 import redis
