@@ -126,10 +126,17 @@ app.layout = html.Div([
                         id='save-format',
                         options=[{'label': 'csv', 'value': 'csv'},
                                  {'label': 'txt', 'value': 'txt'}],
-                        value='csv')
+                        value='csv'),
                 ], className='states-box')
             ], className='button-states-box')
         ]),
+        dcc.Checklist(
+            id='ppt',
+            options=[
+                {'label': 'ppt', 'value': 'ppt'}
+            ],
+            values=[],
+            labelStyle={'display': 'inline-block'}),
         html.Div([
             html.Button('Ref point', id='fit-ref-point-button', n_clicks=0,
                         n_clicks_timestamp=0),
@@ -415,7 +422,12 @@ def update_ref_point_x(_, clickData):
 def update_ref_point_y(_, clickData):
     global refPoint_y
     if clickData is not None:
-        refPoint_y = clickData['points'][0]['y']
+        new_refPoint_y = clickData['points'][0]['y']
+        if new_refPoint_y == refPoint_y:
+            refPoint_y = None
+            return None
+        else:
+            refPoint_y = new_refPoint_y
         return '{:.4f}'.format(refPoint_y)
     return None
 
@@ -530,10 +542,13 @@ def update_parameter_text2(fitFunction):
               [Input('fit-button', 'n_clicks_timestamp')],
               [State('fit-function-type', 'value'),
                State('input-function-parameter', 'value'),
-               State('input-function-parameter2', 'value')])
+               State('input-function-parameter2', 'value'),
+               State('fit-ref-point-x', 'value'),
+               State('fit-ref-point-y', 'value')])
 @timeit
-def update_fit_function(_,fitFunction,
-                        parameterValue, parameterValue2):
+def update_fit_function(_, fitFunction,
+                        parameterValue, parameterValue2,
+                        refPointValueX, refPointValueY):
 
     logger.warning(fitFunction)
     global fit_func, fit_start_value_x, fit_end_value_x
@@ -552,7 +567,8 @@ def update_fit_function(_,fitFunction,
             return []
         if fitFunction == 'shift':
             fit_func = fit_function(dff, fitFunction,
-                [parameterValue, None])
+                [parameterValue, None,
+                float(refPointValueX), float(refPointValueY)])
             return []
 
         fit_func = fit_function(dff, fitFunction)
@@ -868,11 +884,17 @@ def load_state(_, state):
 
 @app.callback(Output('save-output-temp', 'children'),
               [Input('save-output-button', 'n_clicks_timestamp')],
-              [State('save-format', 'value')])
+              [State('save-format', 'value'),
+               State('ppt', 'values')])
 @timeit
-def save_output(_, save_format):
+def save_output(_, save_format, ppt):
+    logger.info('ppt calculate - {}'.format(ppt))
+    if len(ppt) > 0:
+      ppt = True
+    else:
+      ppt = False
     if fileName is not None:
-        stateRecorder.save_output(df, fileName, save_format)
+        stateRecorder.save_output(df, fileName, save_format, ppt)
 
 
 @timeit
