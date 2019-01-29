@@ -121,22 +121,24 @@ app.layout = html.Div([
                             n_clicks_timestamp=0),
                 html.Button('Save', id='save-output-button', n_clicks=0,
                             n_clicks_timestamp=0),
-                html.Div([
-                    dcc.Dropdown(
-                        id='save-format',
-                        options=[{'label': 'csv', 'value': 'csv'},
-                                 {'label': 'txt', 'value': 'txt'}],
-                        value='csv'),
-                ], className='states-box')
-            ], className='button-states-box')
+            ], className='fit-states-box'),
+            html.Div([
+                dcc.Dropdown(
+                    id='save-format',
+                    options=[{'label': 'csv', 'value': 'csv'},
+                             {'label': 'txt', 'value': 'txt'}],
+                    value='csv'),
+                dcc.Checklist(
+                    id='ppt',
+                    options=[
+                        {'label': 'ppt', 'value': 'ppt'}
+                    ],
+                    values=[],
+                    labelStyle={'display': 'inline-block'}),
+            ], className='fit-states-box')
+
         ]),
-        dcc.Checklist(
-            id='ppt',
-            options=[
-                {'label': 'ppt', 'value': 'ppt'}
-            ],
-            values=[],
-            labelStyle={'display': 'inline-block'}),
+
         html.Div([
             html.Button('Ref point', id='fit-ref-point-button', n_clicks=0,
                         n_clicks_timestamp=0),

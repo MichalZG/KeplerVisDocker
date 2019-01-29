@@ -42,10 +42,12 @@ body{
   width: 10px !important;
   height: 30px;
 }
+#ppt > label {
+  margin-top: 10px;
+}
 
-#save-format{
-  width: 10px !important;
-  height: 30px;
+#ppt > label > input {
+  width: 20px !important;
 }
 
 div#saved-states-list{
