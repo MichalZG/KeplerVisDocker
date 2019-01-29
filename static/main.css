@@ -39,9 +39,10 @@ body{
 }
 
 #save-format{
-  width: 10px !important;
+  width: 150px;
   height: 30px;
 }
+
 #ppt > label {
   margin-top: 10px;
 }
@@ -124,7 +125,7 @@ div#saved-states-list{
 
 
 #fit-function-type{
-	width: 20px;
+	width: 150px;
 	height: 30px;
 	margin: 0px;
 	

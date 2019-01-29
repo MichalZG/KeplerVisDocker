@@ -127,7 +127,9 @@ app.layout = html.Div([
                     id='save-format',
                     options=[{'label': 'csv', 'value': 'csv'},
                              {'label': 'txt', 'value': 'txt'}],
-                    value='csv'),
+                    value='csv',
+                    placeholder="Select format"
+                    ),
                 dcc.Checklist(
                     id='ppt',
                     options=[
@@ -199,7 +201,8 @@ app.layout = html.Div([
                     {'label': 'Line', 'value': 'line'},
                     {'label': 'Shift', 'value': 'shift'}
                 ],
-                value='line'
+                value='line',
+                clearable=False
             ),
             html.Br(),
             html.Div([
