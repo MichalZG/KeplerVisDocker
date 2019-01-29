@@ -39,13 +39,16 @@ body{
 }
 
 #save-format{
-  width: 10px !important;
+  width: 150px;
   height: 30px;
 }
 
-#save-format{
-  width: 10px !important;
-  height: 30px;
+#ppt > label {
+  margin-top: 10px;
+}
+
+#ppt > label > input {
+  width: 20px !important;
 }
 
 div#saved-states-list{
@@ -122,7 +125,7 @@ div#saved-states-list{
 
 
 #fit-function-type{
-	width: 20px;
+	width: 150px;
 	height: 30px;
 	margin: 0px;
 	

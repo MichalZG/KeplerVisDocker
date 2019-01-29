@@ -110,10 +110,21 @@ def fit_function(dff, fitFunction, parameters=[]):
         yrescale = 1
     elif fitFunction == 'shift':
         z = None
-        xnew = dff.jd.values
-        ynew = dff.counts + parameters[0]
-        ynew = ynew.values
         yrescale = 1
+        xnew = dff.jd.values
+        ynew = dff.counts 
+
+        if abs(xnew[0] - parameters[2]) < abs(xnew[-1] - parameters[2]):
+            y0_point = ynew.values[0]
+        else:
+            y0_point = ynew.values[-1]
+
+        if parameters[0] != 0:
+            ynew = (dff.counts / y0_point) * (y0_point + parameters[0])
+        elif parameters[3] is not None:
+            ynew = (dff.counts / y0_point) * parameters[3]
+
+        ynew = ynew.values
 
     return [z, xnew, ynew, yrescale, fitFunction, parameters]
 
@@ -249,25 +260,45 @@ class StateRecorder:
         os.makedirs(dirname, exist_ok=True)
         return save_path
 
-    def save_output(self, dff, file_name, save_format):
+    def save_output(self, dff, file_name, save_format, ppt):
         time_now = time.strftime("D%d%m%yT%H%M%S", time.gmtime())
         # file_name = file_name.replace('.', '_{}.'.format(time_now))
         file_name = '_'.join([file_name, time_now]) + '.' + save_format
         dff = dff[dff['activ'] == 1]
-        # dff.drop(columns=['activ'], inplace=True)
+
+        columns_to_save = config.get('FILES', 'COLUMNS_NAMES').split(',')
+        columns_format = config.get(
+                    'FILES', 'OUTPUT_COLUMNS_FORMAT').replace(',', ' ')
+
+        logger.info('Save to {}'.format(save_format))
+        logger.info('PPT calulate - {}'.format(str(ppt)))
+        if ppt is True:
+            dff = self.calculate_ppt(dff)
+            columns_to_save.append('ppt')
+            columns_format += ' %.5f'
 
         if save_format == 'csv':
             dff.to_csv(os.path.join(
                 config.get('STATE', 'OUTPUT_PATH'), file_name), index=False,
-                columns=('jd', 'counts', 'errors', 'flags'))
+                columns=columns_to_save,
+                # float_format=columns_format
+                )
 
         elif save_format == 'txt':
             np.savetxt(os.path.join(
                 config.get('STATE', 'OUTPUT_PATH'), file_name),
-                np.c_[dff.jd, dff.counts, dff.errors, dff.flags],
-                fmt='%.6f %.5f %.5f %d')
+                # np.c_[dff.jd, dff.counts, dff.errors, dff.flags],
+                np.c_[tuple(dff[column] for column in columns_to_save)],
+                fmt=columns_format,
+                header=' '.join(columns_to_save))
 
         return True
+
+    def calculate_ppt(self, dff):
+        dff_counts_mean = dff['counts'].mean()
+        dff['ppt'] = (dff['counts'] - dff_counts_mean) * 1000
+
+        return dff
 
 
 class FitRecorder:
