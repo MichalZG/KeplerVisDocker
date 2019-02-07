@@ -59,7 +59,7 @@ def open_upload_file(content_string):
         usecols=[int(x) - 1 for x in config.get(
             'FILES', 'USE_COLUMNS').split(',')],
         names=config.get('FILES', 'COLUMNS_NAMES').split(','),
-        delim_whitespace=True)
+        delim_whitespace=True, comment='#', skip_blank_lines=True)
     start_date_int = config.getfloat('FILES', 'START_JD')
     if df.jd[0] > 2450000.0:
         start_date_int += 2450000.0
@@ -93,6 +93,8 @@ def fit_function(dff, fitFunction, parameters=[]):
         yrescale = 1
     elif (fitFunction == 'movingaverage_p' or
           fitFunction == 'movingaverage_t'):
+
+        parameters[0] = int(parameters[0])
         roll_dff = dff.copy().rolling(window=parameters[0],
             min_periods=1, center=True) 
         roll_df_mean = roll_dff.mean()[roll_dff.mean().jd > 0]

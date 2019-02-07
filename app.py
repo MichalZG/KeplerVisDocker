@@ -212,7 +212,7 @@ app.layout = html.Div([
                     dcc.Input(
                         id='input-function-parameter',
                         placeholder='Enter a value...',
-                        type='number',
+                        type='text',
                         value=config.getint('INPUTS', 'PARAM_1_DEFAULT'),
                         min=config.getint('INPUTS', 'PARAM_1_MIN'),
                         max=config.getint('INPUTS', 'PARAM_1_MAX'),
@@ -556,6 +556,7 @@ def update_fit_function(_, fitFunction,
                         refPointValueX, refPointValueY):
 
     logger.warning(fitFunction)
+    parameterValue = float(parameterValue)
     global fit_func, fit_start_value_x, fit_end_value_x
     if fit_start_value_x is not None and fit_end_value_x is not None:
         if fit_start_value_x > fit_end_value_x:
