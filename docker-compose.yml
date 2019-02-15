@@ -4,13 +4,14 @@ services:
     build: 
       context: .
       dockerfile: Dockerfile  
-    user: appuser  
+    #user: appuser  
     ports:
      - "8050:8050"
     volumes:
       - .:/code
     depends_on:
       - "redis"
+    command: ["python", "-u", "app.py"]
 
   redis:
     image: "redis:alpine"
