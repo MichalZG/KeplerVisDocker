@@ -116,13 +116,25 @@ def fit_function(dff, fitFunction, parameters=[]):
         xnew = dff.jd.values
         ynew = dff.counts 
 
+        if parameters[2] is None:
+            parameters[2] = xnew[0]
+        else:
+            parameters[2] = float(parameters[2])
+            
+        if parameters[3] is None:
+            parameters[3] = ynew.values[0]
+        else:
+            parameters[3] = float(parameters[3])
+
         if abs(xnew[0] - parameters[2]) < abs(xnew[-1] - parameters[2]):
             y0_point = ynew.values[0]
         else:
             y0_point = ynew.values[-1]
 
         if parameters[0] != 0:
-            ynew = (dff.counts / y0_point) * (y0_point + parameters[0])
+            ynew = (
+                dff.counts / dff.counts.mean()) * (
+                dff.counts.mean() + parameters[0])
         elif parameters[3] is not None:
             ynew = (dff.counts / y0_point) * parameters[3]
 
@@ -298,6 +310,7 @@ class StateRecorder:
 
     def calculate_ppt(self, dff):
         dff_counts_mean = dff['counts'].mean()
+        print(dff_counts_mean)
         dff['ppt'] = (dff['counts'] - dff_counts_mean) * 1000
 
         return dff

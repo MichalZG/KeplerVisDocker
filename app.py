@@ -574,7 +574,7 @@ def update_fit_function(_, fitFunction,
         if fitFunction == 'shift':
             fit_func = fit_function(dff, fitFunction,
                 [parameterValue, None,
-                float(refPointValueX), float(refPointValueY)])
+                refPointValueX, refPointValueY])
             return []
 
         fit_func = fit_function(dff, fitFunction)
