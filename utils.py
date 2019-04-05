@@ -311,7 +311,7 @@ class StateRecorder:
     def calculate_ppt(self, dff):
         dff_counts_mean = dff['counts'].mean()
         print(dff_counts_mean)
-        dff['ppt'] = (dff['counts'] - dff_counts_mean) * 1000
+        dff['ppt'] = ((dff['counts'] / dff_counts_mean) - 1) * 1000
 
         return dff
 
