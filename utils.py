@@ -59,7 +59,8 @@ def open_upload_file(content_string):
         usecols=[int(x) - 1 for x in config.get(
             'FILES', 'USE_COLUMNS').split(',')],
         names=config.get('FILES', 'COLUMNS_NAMES').split(','),
-        delim_whitespace=True, comment='#', skip_blank_lines=True)
+        delim_whitespace=True, comment='#', skip_blank_lines=True,
+        dtype=np.float64)
     start_date_int = config.getfloat('FILES', 'START_JD')
     if df.jd[0] > 2450000.0:
         start_date_int += 2450000.0
