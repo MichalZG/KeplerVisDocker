@@ -388,9 +388,9 @@ def update_zoom_start_point_x(_, clickData):
     if clickData is not None:
         zoomStartPoint = [clickData['points'][0]['x'],
                           clickData['points'][0]['y']]
-        return 'x: {:.4f}'.format(zoomStartPoint[0])
+        return 'x: {:.8f}'.format(zoomStartPoint[0])
     if len(df.jd) > 0:
-        return 'x: {:.4f}'.format(df.jd.values[0])
+        return 'x: {:.8f}'.format(df.jd.values[0])
     return 'x: ---'
 
 
@@ -416,7 +416,7 @@ def update_ref_point_x(_, clickData):
     global refPoint_x
     if clickData is not None:
         refPoint_x = clickData['points'][0]['x']
-        return '{:.4f}'.format(refPoint_x)
+        return '{:.8f}'.format(refPoint_x)
     return None
 
 
@@ -433,7 +433,7 @@ def update_ref_point_y(_, clickData):
             return None
         else:
             refPoint_y = new_refPoint_y
-        return '{:.4f}'.format(refPoint_y)
+        return '{:.8f}'.format(refPoint_y)
     return None
 
 
@@ -445,7 +445,7 @@ def update_start_point_value_x(_, clickData):
     global fit_start_value_x
     if clickData is not None:
         fit_start_value_x = float(clickData['points'][0]['x'])
-        return '{:.4f}'.format(fit_start_value_x)
+        return '{:.8f}'.format(fit_start_value_x)
     return None
 
 
@@ -457,7 +457,7 @@ def update_end_point_value_x(_, clickData):
     global fit_end_value_x
     if clickData is not None:
         fit_end_value_x = float(clickData['points'][0]['x'])
-        return '{:.4f}'.format(fit_end_value_x)
+        return '{:.8f}'.format(fit_end_value_x)
     return None
 
 @app.callback(Output('fit-start-value-y', 'value'),
@@ -468,7 +468,7 @@ def update_start_point_value_y(_, clickData):
     global fit_start_value_y
     if clickData is not None:
         fit_start_value_y = float(clickData['points'][0]['y'])
-        return '{:.4f}'.format(fit_start_value_y)
+        return '{:.8f}'.format(fit_start_value_y)
     return None
 
 
@@ -480,7 +480,7 @@ def update_end_point_value_y(_, clickData):
     global fit_end_value_y
     if clickData is not None:
         fit_end_value_y = float(clickData['points'][0]['y'])
-        return '{:.4f}'.format(fit_end_value_y)
+        return '{:.8f}'.format(fit_end_value_y)
     return None
 
 
