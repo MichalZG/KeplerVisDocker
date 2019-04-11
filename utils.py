@@ -289,11 +289,12 @@ class StateRecorder:
         logger.info('PPT calulate - {}'.format(str(ppt)))
         if ppt is True:
             dff = self.calculate_ppt(dff)
-            columns_to_save[columns_to_save.index('time')] = 'ppt'
+            columns_to_save[columns_to_save.index('counts')] = 'ppt'
             # columns_to_save.append('ppt')
-            # columns_to_save.remove('time')
+            columns_to_save.remove('errors')
             # columns_format += ' %.8f'
-        #TODO zapis ppt zamiast flux!
+            columns_format = ' '.join(columns_format.split(' ')[1:])
+
         if save_format == 'csv':
             dff.to_csv(os.path.join(
                 config.get('STATE', 'OUTPUT_PATH'), file_name), index=False,
