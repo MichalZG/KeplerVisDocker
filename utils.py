@@ -62,11 +62,11 @@ def open_upload_file(content_string):
         delim_whitespace=True, comment='#', skip_blank_lines=True,
         dtype=np.float64)
     start_date_int = config.getfloat('FILES', 'START_JD')
-    if df.jd[0] > 2450000.0:
+    if df.time[0] > 2450000.0:
         start_date_int += 2450000.0
-    df.jd -= start_date_int
-    df = df.set_index('jd')
-    df = df.assign(jd=df.index)
+    df.time -= start_date_int
+    df = df.set_index('time')
+    df = df.assign(time=df.index)
     df = df.assign(activ=1).copy()
 
     return df, start_date_int
@@ -75,21 +75,21 @@ def open_upload_file(content_string):
 @timeit
 def fit_function(dff, fitFunction, parameters=[]):
 
-    xnew = np.linspace(dff.jd.min(), dff.jd.max(),
-                       num=dff.jd.__len__() * config.getint(
+    xnew = np.linspace(dff.time.min(), dff.time.max(),
+                       num=dff.time.__len__() * config.getint(
         'MAIN_GRAPH', 'FIT_DENSITY'),
         endpoint=True)
 
     if fitFunction == 'line':
-        z = np.poly1d(np.polyfit(dff.jd, dff.counts, 1))
+        z = np.poly1d(np.polyfit(dff.time, dff.counts, 1))
         ynew = z(xnew)
         yrescale = 1
     elif fitFunction == 'parabola':
-        z = np.poly1d(np.polyfit(dff.jd, dff.counts, 2))
+        z = np.poly1d(np.polyfit(dff.time, dff.counts, 2))
         ynew = z(xnew)
         yrescale = 1
     elif fitFunction == 'spline':
-        z = CubicSpline(dff.jd, dff.counts)
+        z = CubicSpline(dff.time, dff.counts)
         ynew = z(xnew)
         yrescale = 1
     elif (fitFunction == 'movingaverage_p' or
@@ -98,7 +98,7 @@ def fit_function(dff, fitFunction, parameters=[]):
         parameters[0] = int(parameters[0])
         roll_dff = dff.copy().rolling(window=parameters[0],
             min_periods=1, center=True) 
-        roll_df_mean = roll_dff.mean()[roll_dff.mean().jd > 0]
+        roll_df_mean = roll_dff.mean()[roll_dff.mean().time > 0]
         xnew = roll_df_mean.index
         ynew = roll_df_mean.counts
 
@@ -114,7 +114,7 @@ def fit_function(dff, fitFunction, parameters=[]):
     elif fitFunction == 'shift':
         z = None
         yrescale = 1
-        xnew = dff.jd.values
+        xnew = dff.time.values
         ynew = dff.counts 
 
         if parameters[2] is None:
@@ -223,7 +223,7 @@ def create_function_plot(dff, fit_func):
         dff_out = func[1]
 
         functionPlot.append(go.Pointcloud(
-            x=dff_out.jd,
+            x=dff_out.time,
             y=dff_out.counts,
             marker=dict(color=config.get(
                 'MAIN_GRAPH', 'FIT_MOVING_AVERAGE_POINTS_COLOR'),
@@ -289,9 +289,11 @@ class StateRecorder:
         logger.info('PPT calulate - {}'.format(str(ppt)))
         if ppt is True:
             dff = self.calculate_ppt(dff)
-            columns_to_save.append('ppt')
-            columns_format += ' %.5f'
-
+            columns_to_save[columns_to_save.index('time')] = 'ppt'
+            # columns_to_save.append('ppt')
+            # columns_to_save.remove('time')
+            # columns_format += ' %.8f'
+        #TODO zapis ppt zamiast flux!
         if save_format == 'csv':
             dff.to_csv(os.path.join(
                 config.get('STATE', 'OUTPUT_PATH'), file_name), index=False,
@@ -302,7 +304,7 @@ class StateRecorder:
         elif save_format == 'txt':
             np.savetxt(os.path.join(
                 config.get('STATE', 'OUTPUT_PATH'), file_name),
-                # np.c_[dff.jd, dff.counts, dff.errors, dff.flags],
+                # np.c_[dff.time, dff.counts, dff.errors, dff.flags],
                 np.c_[tuple(dff[column] for column in columns_to_save)],
                 fmt=columns_format,
                 header=' '.join(columns_to_save))
