@@ -294,7 +294,7 @@ class StateRecorder:
             columns_to_save.remove('errors')
             # columns_format += ' %.8f'
             columns_format = ' '.join(columns_format.split(' ')[1:])
-        #TODO zapis ppt zamiast flux!
+
         if save_format == 'csv':
             dff.to_csv(os.path.join(
                 config.get('STATE', 'OUTPUT_PATH'), file_name), index=False,
