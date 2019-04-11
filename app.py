@@ -304,7 +304,6 @@ app.layout = html.Div([
 # CALLBACKS
 ###############################################################################
 
-
 @app.callback(
     Output('buttons-times', 'children'),
     [Input('set-binning-full-button', 'n_clicks_timestamp'),
@@ -368,15 +367,15 @@ def update_n_points_day_between(_, _2):
             fit_start_value_x, fit_end_value_x = fit_end_value_x, fit_start_value_x
 
         dff = get_activ(sf_trigger)
-        dff = dff[(dff.jd >= fit_start_value_x) &
-                  (dff.jd <= fit_end_value_x)]
-        if dff.jd.__len__() > 0:
-            days = dff.jd.values[-1] - dff.jd.values[0]
+        dff = dff[(dff.time >= fit_start_value_x) &
+                  (dff.time <= fit_end_value_x)]
+        if dff.time.__len__() > 0:
+            days = dff.time.values[-1] - dff.time.values[0]
         else:
             days = 1
 
-        return 'n: {:d};    n/day: {:.1f}'.format(dff.jd.__len__(),
-            dff.jd.__len__() / days)
+        return 'n: {:d};    n/day: {:.1f}'.format(dff.time.__len__(),
+            dff.time.__len__() / days)
     return 'n: ---;    n/day: ---'
 
 @app.callback(Output('zoom-point-x-text', 'children'),
@@ -389,8 +388,8 @@ def update_zoom_start_point_x(_, clickData):
         zoomStartPoint = [clickData['points'][0]['x'],
                           clickData['points'][0]['y']]
         return 'x: {:.8f}'.format(zoomStartPoint[0])
-    if len(df.jd) > 0:
-        return 'x: {:.8f}'.format(df.jd.values[0])
+    if len(df.time) > 0:
+        return 'x: {:.8f}'.format(df.time.values[0])
     return 'x: ---'
 
 
@@ -562,8 +561,8 @@ def update_fit_function(_, fitFunction,
         if fit_start_value_x > fit_end_value_x:
             fit_start_value_x, fit_end_value_x = fit_end_value_x, fit_start_value_x
         dff = get_activ(sf_trigger)
-        dff = dff[(dff.jd >= fit_start_value_x) &
-                  (dff.jd <= fit_end_value_x)]
+        dff = dff[(dff.time >= fit_start_value_x) &
+                  (dff.time <= fit_end_value_x)]
 
         if fitFunction == 'spline':
             dff = get_binned_xy(dff, parameterValue, sf_trigger)
@@ -596,34 +595,34 @@ def confirm_fit_function(_, refPointValue, all_data_mean):
         z, xnew, ynew, _, func_name, *_ = fit_func
 
         if func_name == 'movingaverage_p':
-            deactivate_points([z[1].jd])
+            deactivate_points([z[1].time])
         elif func_name == 'movingaverage_t':
             df.loc[
-                list(z[0].jd.mean().index), 'counts'] -= z[0].counts.mean()
+                list(z[0].time.mean().index), 'counts'] -= z[0].counts.mean()
             if refPointValue is not None:
                 df.loc[
-                    list(z[0].jd.mean().index), 'counts'] += float(
+                    list(z[0].time.mean().index), 'counts'] += float(
                         refPointValue)
             else:
                 df.loc[
-                    list(z[0].jd.mean().index), 'counts'] += get_global_mean(
+                    list(z[0].time.mean().index), 'counts'] += get_global_mean(
                         df, sf_trigger)
         elif func_name == 'shift':
-            df.counts[(df.jd >= float(xnew[0])) & (
-                df.jd <= float(xnew[-1])) & df.activ == 1] = ynew
+            df.counts[(df.time >= float(xnew[0])) & (
+                df.time <= float(xnew[-1])) & df.activ == 1] = ynew
         else:
-            x = df.jd[
-                (df.jd >= float(xnew[0])) & (df.jd <= float(xnew[-1]))].values
+            x = df.time[
+                (df.time >= float(xnew[0])) & (df.time <= float(xnew[-1]))].values
             y = df.counts[
-                (df.jd >= float(xnew[0])) & (df.jd <= float(xnew[-1]))].values
+                (df.time >= float(xnew[0])) & (df.time <= float(xnew[-1]))].values
 
             if refPointValue is not None:
                 ynew = y - z(x) + float(refPointValue)
             else:
                 ynew = y - z(x) + get_global_mean(df, sf_trigger)
 
-            df.counts[(df.jd >= float(xnew[0])) & (
-                df.jd <= float(xnew[-1]))] = ynew
+            df.counts[(df.time >= float(xnew[0])) & (
+                df.time <= float(xnew[-1]))] = ynew
     sf_trigger += 1
 
     confirmed_fit_func = fit_func
@@ -678,7 +677,7 @@ def update_all_data_graph(_, buttonsTimes, relayoutData,
         if zoomPointButtonTimes[0] > zoomPointButtonTimes[1]:
             endPoint = get_from_clicked(
                 dff, buttonsTimes[
-                    lastClickedButton][0], sf_trigger).jd.values[
+                    lastClickedButton][0], sf_trigger).time.values[
                 :scattergl_limit][-1]
             startPoint = zoomStartPoint[0]
 
@@ -716,7 +715,7 @@ def update_all_data_graph(_, buttonsTimes, relayoutData,
 
     layout['showlegend'] = False
 
-    fig = get_full_graph(dff.jd, dff.counts, sf_trigger)
+    fig = get_full_graph(dff.time, dff.counts, sf_trigger)
     fig['layout'] = layout
 
     if fit_func is not None:
@@ -773,13 +772,14 @@ def update_zoom_data_graph(_, buttonsTimes,
     dff = get_binned_xy(dff, binningValue, sf_trigger)
 
     if dff.columns.__len__() > 0:
-        fig = get_zoom_graph(dff.jd, dff.counts, sf_trigger)
+        fig = get_zoom_graph(dff.time, dff.counts, sf_trigger)
     else:
         fig = get_zoom_graph([], [], sf_trigger)
 
     fig['layout'] = layout
 
     return fig
+
 
 
 @app.callback(Output('zoom-graph-relayout-temp', 'children'),
@@ -920,7 +920,7 @@ def reload_all():
     global fit_end_value_x, fit_end_value_y
 
     df = pd.DataFrame(
-        data={'jd': [], 'counts': [], 'err': [],
+        data={'time': [], 'counts': [], 'err': [],
               'flag': [], 'activ': []})
     sf = []
     start_date_int = None
@@ -951,7 +951,7 @@ def get_binned_xy(dff, binningValue, sf_trigger):
             pd.cut(
                 dff.index, dff.index.__len__() // binningValue)
         ).mean().dropna()
-        # groups['jd'] = [i.left for i in groups.index.values]
+        # groups[.time'] = [i.left for i in groups.index.values]
 
         return groups
     return dff
@@ -966,7 +966,7 @@ def get_activ(sf_trigger):
 @timeit
 @cache.memoize()
 def get_from_clicked(dff, timeStamp, sf_trigger):
-    dff = dff[dff.jd >= zoomStartPoint[0]]
+    dff = dff[dff.time >= zoomStartPoint[0]]
     return dff
 
 
