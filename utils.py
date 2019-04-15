@@ -1,4 +1,5 @@
 from scipy.interpolate import CubicSpline
+from scipy.interpolate import InterpolatedUnivariateSpline
 
 import numpy as np
 import time
@@ -89,7 +90,23 @@ def fit_function(dff, fitFunction, parameters=[]):
         ynew = z(xnew)
         yrescale = 1
     elif fitFunction == 'spline':
-        z = CubicSpline(dff.time, dff.counts)
+        logger.info('left: {}'.format(parameters))
+        xdata = np.array(dff.time)
+        xdata = np.insert(xdata, 0, parameters['fit_start_value_x'], axis=0)
+        xdata = np.append(xdata, parameters['fit_end_value_x'])
+
+        ydata = np.array(dff.counts)
+        ydata = np.insert(ydata, 0, parameters['left_bin'].counts, axis=0)
+        ydata = np.append(ydata, parameters['right_bin'].counts)
+
+        z = InterpolatedUnivariateSpline(xdata, ydata)
+
+        xnew = np.insert(xnew, 0, parameters['fit_start_value_x'], axis=0)
+        xnew = np.append(xnew, parameters['fit_end_value_x'])
+        xnew = np.linspace(xnew.min(), xnew.max(),
+                       num=xnew.__len__() * config.getint(
+        'MAIN_GRAPH', 'FIT_DENSITY'),
+        endpoint=True)
         ynew = z(xnew)
         yrescale = 1
     elif (fitFunction == 'movingaverage_p' or
