@@ -565,7 +565,17 @@ def update_fit_function(_, fitFunction,
                   (dff.time <= fit_end_value_x)]
 
         if fitFunction == 'spline':
+            edge_distance = int(parameterValue // 2)
+            parameters = {
+              'fit_start_value_x': fit_start_value_x,
+              'fit_end_value_x': fit_end_value_x,
+              'left_bin': dff.head(edge_distance).mean(),
+              'right_bin': dff.tail(edge_distance).mean()
+            }
             dff = get_binned_xy(dff, parameterValue, sf_trigger)
+
+            fit_func = fit_function(dff, fitFunction, parameters)
+            return []
         if (fitFunction == 'movingaverage_p' or fitFunction == 'movingaverage_t'):
             fit_func = fit_function(dff, fitFunction,
                 [parameterValue, parameterValue2])
