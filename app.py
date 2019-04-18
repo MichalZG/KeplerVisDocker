@@ -555,6 +555,7 @@ def update_fit_function(_, fitFunction,
                         refPointValueX, refPointValueY):
 
     logger.warning(fitFunction)
+    
     parameterValue = float(parameterValue)
     global fit_func, fit_start_value_x, fit_end_value_x
     if fit_start_value_x is not None and fit_end_value_x is not None:
