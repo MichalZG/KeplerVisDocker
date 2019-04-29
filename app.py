@@ -64,11 +64,11 @@ fit_end_value_y = None
 fileName = None
 sf_trigger = 1
 
-df = pd.DataFrame(
-    data=dict(
-        [(name, []) for name in config.get(
-            'FILES', 'COLUMNS_NAMES').split(',')])
-)
+# df = pd.DataFrame(
+#     data=dict(
+#         [(name, []) for name in config.get(
+#             'FILES', 'COLUMNS_NAMES').split(',')])
+# )
 
 
 # LAYOUT
