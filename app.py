@@ -561,35 +561,36 @@ def update_fit_function(_, fitFunction,
     if fit_start_value_x is not None and fit_end_value_x is not None:
         if fit_start_value_x > fit_end_value_x:
             fit_start_value_x, fit_end_value_x = fit_end_value_x, fit_start_value_x
-        dff = get_activ(sf_trigger)
-        dff = dff[(dff.time >= fit_start_value_x) &
-                  (dff.time <= fit_end_value_x)]
+    else:
+        fit_start_value_x = df.time.min()
+        fit_end_value_x = df.time.max()
+    dff = get_activ(sf_trigger)
+    dff = dff[(dff.time >= fit_start_value_x) &
+              (dff.time <= fit_end_value_x)]
 
-        if fitFunction == 'spline':
-            edge_distance = int(parameterValue // 2)
-            parameters = {
-              'fit_start_value_x': fit_start_value_x,
-              'fit_end_value_x': fit_end_value_x,
-              'left_bin': dff.head(edge_distance).mean(),
-              'right_bin': dff.tail(edge_distance).mean()
-            }
-            dff = get_binned_xy(dff, parameterValue, sf_trigger)
+    if fitFunction == 'spline':
+        edge_distance = int(parameterValue // 2)
+        parameters = {
+          'fit_start_value_x': fit_start_value_x,
+          'fit_end_value_x': fit_end_value_x,
+          'left_bin': dff.head(edge_distance).mean(),
+          'right_bin': dff.tail(edge_distance).mean()
+        }
+        dff = get_binned_xy(dff, parameterValue, sf_trigger)
 
-            fit_func = fit_function(dff, fitFunction, parameters)
-            return []
-        if (fitFunction == 'movingaverage_p' or fitFunction == 'movingaverage_t'):
-            fit_func = fit_function(dff, fitFunction,
-                [parameterValue, parameterValue2])
-            return []
-        if fitFunction == 'shift':
-            fit_func = fit_function(dff, fitFunction,
-                [parameterValue, None,
-                refPointValueX, refPointValueY])
-            return []
-
-        fit_func = fit_function(dff, fitFunction)
+        fit_func = fit_function(dff, fitFunction, parameters)
+        return []
+    if (fitFunction == 'movingaverage_p' or fitFunction == 'movingaverage_t'):
+        fit_func = fit_function(dff, fitFunction,
+            [parameterValue, parameterValue2])
+        return []
+    if fitFunction == 'shift':
+        fit_func = fit_function(dff, fitFunction,
+            [parameterValue, None,
+            refPointValueX, refPointValueY])
         return []
 
+    fit_func = fit_function(dff, fitFunction)
     return []
 
 
