@@ -12,7 +12,7 @@ import configparser
 import logging
 import io
 import base64
-
+import string
 
 config = configparser.ConfigParser()
 config.read('./config/config.cfg')
@@ -53,13 +53,24 @@ def timeit(method):
     return timed
 
 
+"""
+col_names = ['time', 'counts', 'err', 'flag']
+add_names = [x for x in string.ascii_lowercase][:len(data.columns)-len(col_names)]
+col_names.extend(add_names)
+data.columns = col_names
+"""
+
 @timeit
 def open_upload_file(content_string):
     df = pd.read_csv(io.StringIO(
         base64.b64decode(content_string).decode('utf-8')),
-        names=['time', 'counts', 'counts_err', 'flags'],
-        delim_whitespace=True, comment='#', skip_blank_lines=True,
+        delim_whitespace=True, comment='#', skip_blank_lines=True, header=None,
         dtype=np.float64)
+    col_names = ['time', 'counts', 'err', 'flag']
+    add_names = [x for x in string.ascii_lowercase][:len(df.columns)-len(col_names)]
+    col_names.extend(add_names)
+    print(col_names)
+    df.columns = col_names
     df = df.dropna(axis=1, how='all')
     start_date_int = config.getfloat('FILES', 'START_JD')
     if df.time[0] > 2450000.0:
