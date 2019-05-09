@@ -66,7 +66,7 @@ def open_upload_file(content_string):
         base64.b64decode(content_string).decode('utf-8')),
         delim_whitespace=True, comment='#', skip_blank_lines=True, header=None,
         dtype=np.float64)
-    col_names = ['time', 'counts', 'err', 'flag']
+    col_names = ['time', 'counts', 'counts_err', 'flag']
     add_names = [x for x in string.ascii_lowercase][:len(df.columns)-len(col_names)]
     col_names.extend(add_names)
     print(col_names)
@@ -307,13 +307,24 @@ class StateRecorder:
         file_name = '_'.join([file_name, time_now]) + '.' + save_format
         dff = dff[dff['activ'] == 1]
 
-        columns_to_save = ['time', 'counts', 'counts_err', 'flags']
-        columns_to_save = [col for col in columns_to_save if col in dff.columns]
-        columns_to_save = columns_to_save[:len(dff.columns)]
-        columns_format = config.get(
-                    'FILES', 'OUTPUT_COLUMNS_FORMAT')
+        # columns_to_save = ['time', 'counts', 'counts_err', 'flags']
+        # columns_to_save = [col for col in columns_to_save if col in dff.columns]
+        # columns_to_save = columns_to_save[:len(dff.columns)]
+        # columns_format = config.get(
+        #             'FILES', 'OUTPUT_COLUMNS_FORMAT')
 
-        logger.info('Dff columns {}'.format(dff.columns))
+        columns_to_save = dff.columns.tolist()
+        logger.info('Columns to save {}'.format(columns_to_save))
+
+        columns_to_save.remove('time')
+        temp_col = ['time']
+        temp_col.extend(columns_to_save)
+        columns_to_save = temp_col
+        logger.info('Columns to save {}'.format(columns_to_save))
+        dff = dff[columns_to_save]
+        # logger.info(dff)
+        columns_to_save.remove('activ')
+
         logger.info('Columns to save {}'.format(columns_to_save))
         logger.info('Save to {}'.format(save_format))
         logger.info('PPT calulate - {}'.format(str(ppt)))
@@ -321,8 +332,8 @@ class StateRecorder:
         if ppt is True:
             dff = self.calculate_ppt(dff)
             columns_to_save[columns_to_save.index('counts')] = 'ppt'
-            if 'errors' in columns_to_save:
-                columns_to_save.remove('errors')
+            if 'counts_err' in columns_to_save:
+                columns_to_save.remove('counts_err')
             # columns_format = ' '.join(columns_format.split(' ')[1:])
 
         if save_format == 'csv':
@@ -336,7 +347,7 @@ class StateRecorder:
                 config.get('STATE', 'OUTPUT_PATH'), file_name),
                 # np.c_[dff.time, dff.counts, dff.errors, dff.flags],
                 np.c_[tuple(dff[column] for column in columns_to_save)],
-                fmt=columns_format,
+                fmt='%.6f',
                 header=' '.join(columns_to_save))
 
         return True
