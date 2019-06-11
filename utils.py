@@ -66,20 +66,21 @@ def open_upload_file(content_string):
         base64.b64decode(content_string).decode('utf-8')),
         delim_whitespace=True, comment='#', skip_blank_lines=True, header=None,
         dtype=np.float64)
-    col_names = ['time', 'counts', 'counts_err', 'flag']
+    col_names = ['time', 'counts']
     add_names = [x for x in string.ascii_lowercase][:len(df.columns)-len(col_names)]
     col_names.extend(add_names)
-    print(col_names)
     df.columns = col_names
     df = df.dropna(axis=1, how='all')
     start_date_int = config.getfloat('FILES', 'START_JD')
+    logger.info(df.time[0])
     if df.time[0] > 2450000.0:
         start_date_int += 2450000.0
     df.time -= start_date_int
+    logger.info(df)
     df = df.set_index('time')
     df = df.assign(time=df.index)
     df = df.assign(activ=1).copy()
-
+    logger.info(df)
     return df, start_date_int
 
 
