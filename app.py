@@ -309,26 +309,29 @@ app.layout = html.Div([
     [Input('set-binning-full-button', 'n_clicks_timestamp'),
      Input('zoom-point-button', 'n_clicks_timestamp'),
      Input('load-state-button', 'n_clicks_timestamp'),
-     Input('fit-ref-point-button', 'n_clicks_timestamp'),
-     Input('fit-start-value-button', 'n_clicks_timestamp'),
-     Input('fit-end-value-button', 'n_clicks_timestamp'),
+     #Input('fit-ref-point-button', 'n_clicks_timestamp'),
+     #Input('fit-start-value-button', 'n_clicks_timestamp'),
+     #Input('fit-end-value-button', 'n_clicks_timestamp'),
      Input('fit-button', 'n_clicks_timestamp'),
-     Input('fit-confirm-button', 'n_clicks_timestamp'),
+     #Input('fit-confirm-button', 'n_clicks_timestamp'),
      Input('fit-clear-button', 'n_clicks_timestamp'),
      Input('set-binning-zoom-button', 'n_clicks_timestamp'),
-     Input('delete-button', 'n_clicks_timestamp'),
+     #Input('delete-button', 'n_clicks_timestamp'),
      Input('refresh-graph-button', 'n_clicks_timestamp')
      ],
     [State('buttons-times', 'children')])
 @timeit
 def update_last_clicked_button(*args):
     buttonNames = ('set-binning-full-button', 'zoom-point-button',
-                   'load-state-button', 'fit-ref-point-button',
-                   'fit-start-value-button',
-                   'fit-end-value-button',
-                   'fit-button', 'fit-confirm-button',
+                   'load-state-button', 
+                   #'fit-ref-point-button',
+                   #'fit-start-value-button',
+                   #'fit-end-value-button',
+                   'fit-button', 
+                   #'fit-confirm-button',
                    'clear-fit-button', 'set-binning-zoom-button',
-                   'delete-button', 'refresh-graph-button',
+                   #'delete-button',
+                   'refresh-graph-button',
                    # 'reload-button', 'download-button'
                    )
 
@@ -596,10 +599,9 @@ def update_fit_function(_, fitFunction,
 
 @app.callback(Output('fit-confirmed', 'children'),
               [Input('fit-confirm-button', 'n_clicks_timestamp')],
-              [State('fit-ref-point-y', 'value'),
-               State('all-data-mean-text', 'children')])
+              [State('fit-ref-point-y', 'value')])
 @timeit
-def confirm_fit_function(_, refPointValue, all_data_mean):
+def confirm_fit_function(_, refPointValue):
     global confirmed_fit_func, fit_func, sf_trigger, df
     global fit_start_value_x, fit_end_value_x
 
