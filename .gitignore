@@ -2,3 +2,4 @@ __pycache__/
 log.dat
 /outputs/
 /.tmp/
+.ipynb_checkpoints/
