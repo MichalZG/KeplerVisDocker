@@ -135,8 +135,9 @@ app.layout = html.Div([
                     options=[
                         {'label': 'ppt', 'value': 'ppt'}
                     ],
-                    values=[],
-                    labelStyle={'display': 'inline-block'}),
+                    value=[],
+                    #labelStyle={'display': 'inline-block'}
+                    ),
             ], className='fit-states-box')
 
         ]),
@@ -154,38 +155,38 @@ app.layout = html.Div([
             dcc.Input(
                 id='fit-ref-point-x',
                 placeholder='Ref point x',
-                type='str',
+                type='text',
                 value=None
             ),
             dcc.Input(
                 id='fit-start-value-x',
                 placeholder='Start point x',
-                type='str',
+                type='text',
                 value=None
             ),
             dcc.Input(
                 id='fit-end-value-x',
                 placeholder='End point x',
-                type='str',
+                type='text',
                 value=None
             ),
             html.Br(),
             dcc.Input(
                 id='fit-ref-point-y',
                 placeholder='Ref point y',
-                type='str',
+                type='text',
                 value=None
             ),
             dcc.Input(
                 id='fit-start-value-y',
                 placeholder='Start point y',
-                type='str',
+                type='text',
                 value=None
             ),
             dcc.Input(
                 id='fit-end-value-y',
                 placeholder='End point y',
-                type='str',
+                type='text',
                 value=None
             ),
         ], className='fit-states-box'),
@@ -1032,10 +1033,13 @@ def get_global_mean(dff, sf_trigger):
 # CSS
 ########################################################
 
+"""
 app.css.append_css({
     "external_url": "/static/main.css"})
 app.css.append_css({
     "external_url": "/static/loading.css"})
+"""
+
 
 if __name__ == '__main__':
 
