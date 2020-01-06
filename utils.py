@@ -126,8 +126,7 @@ def fit_function(dff, fitFunction, parameters=[]):
         parameters[0] = int(parameters[0])
         roll_dff = dff.copy().rolling(window=parameters[0],
             min_periods=1, center=True) 
-        #roll_df_mean = roll_dff.mean()[roll_dff.mean().time > 0]
-        roll_df_mean = roll_dff.mean()
+        roll_df_mean = roll_dff.mean()[roll_dff.mean().time > 0]
         xnew = roll_df_mean.index
         ynew = roll_df_mean.counts
 
