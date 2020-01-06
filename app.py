@@ -2,6 +2,7 @@ import dash_html_components as html
 import dash_core_components as dcc
 import dash
 import logging
+import copy
 
 from dash.dependencies import Input, Output, State
 import plotly.graph_objs as go
@@ -50,7 +51,9 @@ app.config['suppress_callback_exceptions'] = True
 scattergl_limit = config.getint('ZOOM_GRAPH', 'POINTS_LIMIT')
 
 sf = []
-start_date_int = None
+sf_trigger = 1
+
+start_date_int = 0
 fit_func = None
 confirmed_fit_func = None
 shadow_shape = None
@@ -62,7 +65,24 @@ refPoint_y = None
 fit_start_value_y = None
 fit_end_value_y = None
 fileName = None
-sf_trigger = 1
+
+state_dict = json.dumps(
+    {
+    'start_date_int': None,
+    'fit_func': None,
+    'confirmed_fit_func': None,
+    'shadow_shape': None,
+    'zoomStartPoint': None,
+    'refPoint_x': None,
+    'fit_start_value_x': None,
+    'fit_end_value_x': None,
+    'refPoint_y': None,
+    'fit_start_value_y': None,
+    'fit_end_value_y': None,
+    'fileName': None,
+    }
+)
+
 
 # df = pd.DataFrame(
 #     data=dict(
@@ -135,8 +155,9 @@ app.layout = html.Div([
                     options=[
                         {'label': 'ppt', 'value': 'ppt'}
                     ],
-                    values=[],
-                    labelStyle={'display': 'inline-block'}),
+                    value=[],
+                    #labelStyle={'display': 'inline-block'}
+                    ),
             ], className='fit-states-box')
 
         ]),
@@ -154,38 +175,38 @@ app.layout = html.Div([
             dcc.Input(
                 id='fit-ref-point-x',
                 placeholder='Ref point x',
-                type='str',
+                type='text',
                 value=None
             ),
             dcc.Input(
                 id='fit-start-value-x',
                 placeholder='Start point x',
-                type='str',
+                type='text',
                 value=None
             ),
             dcc.Input(
                 id='fit-end-value-x',
                 placeholder='End point x',
-                type='str',
+                type='text',
                 value=None
             ),
             html.Br(),
             dcc.Input(
                 id='fit-ref-point-y',
                 placeholder='Ref point y',
-                type='str',
+                type='text',
                 value=None
             ),
             dcc.Input(
                 id='fit-start-value-y',
                 placeholder='Start point y',
-                type='str',
+                type='text',
                 value=None
             ),
             dcc.Input(
                 id='fit-end-value-y',
                 placeholder='End point y',
-                type='str',
+                type='text',
                 value=None
             ),
         ], className='fit-states-box'),
@@ -297,6 +318,8 @@ app.layout = html.Div([
     html.Div(id='clear-data', children='value', style={'display': 'none'}),
     html.Div(id='buttons-times', children=None,
              style={'display': 'none'}),
+    html.Div(id='state', children=state_dict,
+             style={'display': 'none'}),
 ])
 
 
@@ -358,20 +381,23 @@ def update_global_mean_text(_):
     return 'Global mean value: {:.2f}'.format(global_mean)
 
 
-@app.callback(Output('n-points-day', 'children'),
+@app.callback([Output('n-points-day', 'children'),
+               Output('state', 'children')],
               [Input('data-modification-trigger', 'children'),
-               Input('buttons-times', 'children')])
+               Input('buttons-times', 'children')],
+              [State('state', 'children')]
+            )
 @timeit
-def update_n_points_day_between(_, _2):
-    global fit_start_value_x, fit_end_value_x
+def update_n_points_day_between(_, _2, state):
+    state = json.loads(state)
 
-    if (fit_start_value_x is not None) and (fit_end_value_x is not None):
-        if fit_start_value_x > fit_end_value_x:
-            fit_start_value_x, fit_end_value_x = fit_end_value_x, fit_start_value_x
+    if (state['fit_start_value_x'] is not None) and (state['fit_end_value_x'] is not None):
+        if state['fit_start_value_x'] > state['fit_end_value_x']:
+            state['fit_start_value_x'], state['fit_end_value_x'] = state['fit_end_value_x'], state['fit_start_value_x']
 
         dff = get_activ(sf_trigger)
-        dff = dff[(dff.time >= fit_start_value_x) &
-                  (dff.time <= fit_end_value_x)]
+        dff = dff[(dff.time >= state['fit_start_value_x']) &
+                  (dff.time <= state['fit_end_value_x'])]
         if dff.time.__len__() > 0:
             days = dff.time.values[-1] - dff.time.values[0]
         else:
@@ -379,21 +405,25 @@ def update_n_points_day_between(_, _2):
 
         return 'n: {:d};    n/day: {:.1f}'.format(dff.time.__len__(),
             dff.time.__len__() / days)
-    return 'n: ---;    n/day: ---'
+    return 'n: ---;    n/day: ---', json.dumps(state)
 
-@app.callback(Output('zoom-point-x-text', 'children'),
+@app.callback([Output('zoom-point-x-text', 'children'),
+               Output('state', 'children')],
               [Input('zoom-point-button', 'n_clicks_timestamp')],
-              [State('all-data-graph', 'clickData')])
+              [State('all-data-graph', 'clickData'),
+               State('state', 'children')])
 @timeit
-def update_zoom_start_point_x(_, clickData):
-    global zoomStartPoint
+def update_zoom_start_point_x(_, clickData, state):
+    state = json.loads(state)
+    zoomStartPoint = state['zoomStartPoint']
+
     if clickData is not None:
         zoomStartPoint = [clickData['points'][0]['x'],
                           clickData['points'][0]['y']]
         return 'x: {:.8f}'.format(zoomStartPoint[0])
     if len(df.time) > 0:
         return 'x: {:.8f}'.format(df.time.values[0])
-    return 'x: ---'
+    return 'x: ---', json.dumps(state)
 
 
 @app.callback(Output('saved-states-list', 'options'),
@@ -675,11 +705,12 @@ def clear_fit_function(_):
                State('all-data-graph', 'clickData'),
                State('fit-ref-point-y', 'value'),
                State('fit-start-value-x', 'value'),
-               State('fit-end-value-x', 'value')])
+               State('fit-end-value-x', 'value'),
+               State('state', 'children'),])
 @timeit
 def update_all_data_graph(_, buttonsTimes, relayoutData,
                           binningValue, clickData, refPointValue,
-                          startFitValue, endFitValue):
+                          startFitValue, endFitValue, state):
     global shadow_shape
     dff = get_activ(sf_trigger)
     layout = dict(shapes=[])
@@ -724,7 +755,8 @@ def update_all_data_graph(_, buttonsTimes, relayoutData,
             relayout_yrange = relayoutData['yaxis']
 
     layout['xaxis'] = dict(range=relayout_xrange,
-                           title='Time [JD - {}]'.format(start_date_int))
+                           title='Time [JD - {}]'.format(
+                               int(state[start_date_int])))
     layout['yaxis'] = dict(range=relayout_yrange, title='Counts')
 
     layout['showlegend'] = False
@@ -746,10 +778,11 @@ def update_all_data_graph(_, buttonsTimes, relayoutData,
               [State('zoom-graph-relayout-temp', 'children'),
                # State('zoom-data-graph', 'relayoutData'),
                State('input-binning-zoom', 'value'),
-               State('all-data-graph', 'clickData')])
+               State('all-data-graph', 'clickData'),
+               State('state', 'children'),])
 @timeit
 def update_zoom_data_graph(_, buttonsTimes,
-                           relayoutData, binningValue, clickData):
+                           relayoutData, binningValue, clickData, state):
 
     dff = get_activ(sf_trigger)
     buttonsTimes, lastClickedButton = load_button_times(buttonsTimes)
@@ -770,7 +803,8 @@ def update_zoom_data_graph(_, buttonsTimes,
                                relayoutData['yaxis.range[1]']]
 
     layout['xaxis'] = dict(range=relayout_xrange,
-                           title='Time [JD - {}]'.format(start_date_int))
+                           title='Time [JD - {}]'.format(int(state[start_date_int])
+                           ))
     layout['yaxis'] = dict(range=relayout_yrange, title='Counts')
 
     layout['dragmode'] = config.get('ZOOM_GRAPH', 'DEFAULT_TOOL')
@@ -851,29 +885,34 @@ def data_modification_trigger(*args):
     return time.time()
 
 
-@app.callback(Output('upload-temp', 'children'),
+@app.callback([Output('upload-temp', 'children'),
+               Output('state', 'children')],
               [Input('upload-file', 'contents'),
-               Input('upload-file', 'filename')])
+               Input('upload-file', 'filename')],
+              [State('state', 'children')])
 @timeit
-def upload_file(contents, file_name):
-    global df, start_date_int, sf_trigger, fileName, stateRecorder
+def upload_file(contents, file_name, state):
+    global df, sf_trigger, stateRecorder
+    state = json.loads(state)
     if reload_all():
         if contents is not None:
             content_type, content_string = contents.split(',')
-            df, start_date_int = open_upload_file(content_string)
+            df, state['start_date_int'] = open_upload_file(content_string)
             stateRecorder = StateRecorder()
             sf_trigger += 1
-            fileName = file_name
+            state['fileName'] = file_name
 
-    return time.time()
+    return time.time(), json.dumps(state)
 
 
 @app.callback(Output('upload-file-name', 'children'),
-              [Input('upload-temp', 'children')])
+              [Input('upload-temp', 'children')],
+              [State('state', 'children')])
 @timeit
-def show_upload_file(_):
-    if fileName is not None:
-        return fileName
+def show_upload_file(_, state):
+    state = json.loads(state)
+    if state['fileName'] is not None:
+        return state['fileName']
 
     return '---'
 
@@ -1032,10 +1071,13 @@ def get_global_mean(dff, sf_trigger):
 # CSS
 ########################################################
 
+"""
 app.css.append_css({
     "external_url": "/static/main.css"})
 app.css.append_css({
     "external_url": "/static/loading.css"})
+"""
+
 
 if __name__ == '__main__':
 
