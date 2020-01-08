@@ -1,6 +1,7 @@
 import dash_html_components as html
 import dash_core_components as dcc
 import dash
+from dash.exceptions import PreventUpdate
 import logging
 
 from dash.dependencies import Input, Output, State
@@ -569,6 +570,8 @@ def update_fit_function(_, fitFunction,
         fit_start_value_x = df.time.min()
         fit_end_value_x = df.time.max()
     dff = get_activ(sf_trigger)
+    if len(dff.index) == 0:
+        return []
     dff = dff[(dff.time >= fit_start_value_x) &
               (dff.time <= fit_end_value_x)]
 
@@ -596,7 +599,6 @@ def update_fit_function(_, fitFunction,
 
     fit_func = fit_function(dff, fitFunction)
     return []
-
 
 @app.callback(Output('fit-confirmed', 'children'),
               [Input('fit-confirm-button', 'n_clicks_timestamp')],
@@ -718,11 +720,11 @@ def update_all_data_graph(_, buttonsTimes, relayoutData,
     relayout_xrange = []
     relayout_yrange = []
     if relayoutData:
-        if 'xaxis' in relayoutData:
-            relayout_xrange = relayoutData['xaxis']
+        if 'xaxis.range' in relayoutData:
+            relayout_xrange = relayoutData['xaxis.range']
 
-        if 'yaxis' in relayoutData:
-            relayout_yrange = relayoutData['yaxis']
+        if 'yaxis.range' in relayoutData:
+            relayout_yrange = relayoutData['yaxis.range']
 
     layout['xaxis'] = dict(range=relayout_xrange,
                            title='Time [JD - {}]'.format(start_date_int))
@@ -910,6 +912,8 @@ def load_state(_, state):
 @timeit
 def save_output(_, save_format, ppt):
     logger.info('ppt calculate - {}'.format(ppt))
+    if not ppt:
+        return False
     if len(ppt) > 0:
       ppt = True
     else:

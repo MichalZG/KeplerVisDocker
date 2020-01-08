@@ -72,15 +72,13 @@ def open_upload_file(content_string):
     df.columns = col_names
     df = df.dropna(axis=1, how='all')
     start_date_int = config.getfloat('FILES', 'START_JD')
-    logger.info(df.time[0])
     if df.time[0] > 2450000.0:
         start_date_int += 2450000.0
     df.time -= start_date_int
-    logger.info(df)
     df = df.set_index('time')
     df = df.assign(time=df.index)
     df = df.assign(activ=1).copy()
-    logger.info(df)
+
     return df, start_date_int
 
 
