@@ -570,6 +570,8 @@ def update_fit_function(_, fitFunction,
         fit_start_value_x = df.time.min()
         fit_end_value_x = df.time.max()
     dff = get_activ(sf_trigger)
+    if len(dff.index) == 0:
+        return []
     dff = dff[(dff.time >= fit_start_value_x) &
               (dff.time <= fit_end_value_x)]
 
@@ -597,7 +599,6 @@ def update_fit_function(_, fitFunction,
 
     fit_func = fit_function(dff, fitFunction)
     return []
-
 
 @app.callback(Output('fit-confirmed', 'children'),
               [Input('fit-confirm-button', 'n_clicks_timestamp')],
@@ -683,7 +684,6 @@ def update_all_data_graph(_, buttonsTimes, relayoutData,
                           binningValue, clickData, refPointValue,
                           startFitValue, endFitValue):
     global shadow_shape
-    logger.info(dash.callback_context.triggered)
     dff = get_activ(sf_trigger)
     layout = dict(shapes=[])
 
@@ -719,7 +719,6 @@ def update_all_data_graph(_, buttonsTimes, relayoutData,
 
     relayout_xrange = []
     relayout_yrange = []
-    logger.info(relayoutData)
     if relayoutData:
         if 'xaxis.range' in relayoutData:
             relayout_xrange = relayoutData['xaxis.range']
@@ -913,6 +912,8 @@ def load_state(_, state):
 @timeit
 def save_output(_, save_format, ppt):
     logger.info('ppt calculate - {}'.format(ppt))
+    if not ppt:
+        return False
     if len(ppt) > 0:
       ppt = True
     else:
