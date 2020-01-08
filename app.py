@@ -682,6 +682,7 @@ def update_all_data_graph(_, buttonsTimes, relayoutData,
                           binningValue, clickData, refPointValue,
                           startFitValue, endFitValue):
     global shadow_shape
+    logger.info(dash.callback_context.triggered)
     dff = get_activ(sf_trigger)
     layout = dict(shapes=[])
 
@@ -717,12 +718,13 @@ def update_all_data_graph(_, buttonsTimes, relayoutData,
 
     relayout_xrange = []
     relayout_yrange = []
+    logger.info(relayoutData)
     if relayoutData:
-        if 'xaxis' in relayoutData:
-            relayout_xrange = relayoutData['xaxis']
+        if 'xaxis.range' in relayoutData:
+            relayout_xrange = relayoutData['xaxis.range']
 
-        if 'yaxis' in relayoutData:
-            relayout_yrange = relayoutData['yaxis']
+        if 'yaxis.range' in relayoutData:
+            relayout_yrange = relayoutData['yaxis.range']
 
     layout['xaxis'] = dict(range=relayout_xrange,
                            title='Time [JD - {}]'.format(start_date_int))
