@@ -11,6 +11,8 @@ services:
       - .:/code
     depends_on:
       - "redis"
+    environment: 
+      - DASH_DEBUG="${DASH_DEBUG}"
     command: ["python", "-u", "app.py"]
 
   redis:
