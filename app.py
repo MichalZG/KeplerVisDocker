@@ -881,12 +881,13 @@ def show_upload_file(_):
     return '---'
 
 @app.callback(Output('save-state-temp', 'children'),
-              [Input('buttons-times', 'children')])
+              [Input('fit-confirm-button', 'n_clicks_timestamp'),
+               Input('delete-button', 'n_clicks_timestamp')])
 @timeit
-def save_state(buttonsTimes):
-    buttonsTimes, lastClickedButton = load_button_times(buttonsTimes)
-    if lastClickedButton in ['delete-button', 'fit-confirm-button']:
-        stateRecorder.save_state(df, lastClickedButton)
+def save_state(_, _2):
+    trigger = dash.callback_context.triggered[0]['prop_id']
+    logger.info("Saved state by {}".format(trigger))
+    stateRecorder.save_state(df, trigger)
     return time.time()
 
 
@@ -908,12 +909,12 @@ def load_state(_, state):
 @app.callback(Output('save-output-temp', 'children'),
               [Input('save-output-button', 'n_clicks_timestamp')],
               [State('save-format', 'value'),
-               State('ppt', 'values')])
+               State('ppt', 'value')])
 @timeit
 def save_output(_, save_format, ppt):
     logger.info('ppt calculate - {}'.format(ppt))
-    if not ppt:
-        return False
+    if ppt is None:
+        raise PreventUpdate
     if len(ppt) > 0:
       ppt = True
     else:
