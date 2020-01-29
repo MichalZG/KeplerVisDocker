@@ -1,6 +1,7 @@
 import dash_html_components as html
 import dash_core_components as dcc
 import dash
+from dash.exceptions import PreventUpdate
 import logging
 
 from dash.dependencies import Input, Output, State
@@ -64,11 +65,11 @@ fit_end_value_y = None
 fileName = None
 sf_trigger = 1
 
-df = pd.DataFrame(
-    data=dict(
-        [(name, []) for name in config.get(
-            'FILES', 'COLUMNS_NAMES').split(',')])
-)
+# df = pd.DataFrame(
+#     data=dict(
+#         [(name, []) for name in config.get(
+#             'FILES', 'COLUMNS_NAMES').split(',')])
+# )
 
 
 # LAYOUT
@@ -135,8 +136,9 @@ app.layout = html.Div([
                     options=[
                         {'label': 'ppt', 'value': 'ppt'}
                     ],
-                    values=[],
-                    labelStyle={'display': 'inline-block'}),
+                    value=[],
+                    #labelStyle={'display': 'inline-block'}
+                    ),
             ], className='fit-states-box')
 
         ]),
@@ -154,38 +156,38 @@ app.layout = html.Div([
             dcc.Input(
                 id='fit-ref-point-x',
                 placeholder='Ref point x',
-                type='str',
+                type='text',
                 value=None
             ),
             dcc.Input(
                 id='fit-start-value-x',
                 placeholder='Start point x',
-                type='str',
+                type='text',
                 value=None
             ),
             dcc.Input(
                 id='fit-end-value-x',
                 placeholder='End point x',
-                type='str',
+                type='text',
                 value=None
             ),
             html.Br(),
             dcc.Input(
                 id='fit-ref-point-y',
                 placeholder='Ref point y',
-                type='str',
+                type='text',
                 value=None
             ),
             dcc.Input(
                 id='fit-start-value-y',
                 placeholder='Start point y',
-                type='str',
+                type='text',
                 value=None
             ),
             dcc.Input(
                 id='fit-end-value-y',
                 placeholder='End point y',
-                type='str',
+                type='text',
                 value=None
             ),
         ], className='fit-states-box'),
@@ -309,26 +311,29 @@ app.layout = html.Div([
     [Input('set-binning-full-button', 'n_clicks_timestamp'),
      Input('zoom-point-button', 'n_clicks_timestamp'),
      Input('load-state-button', 'n_clicks_timestamp'),
-     Input('fit-ref-point-button', 'n_clicks_timestamp'),
-     Input('fit-start-value-button', 'n_clicks_timestamp'),
-     Input('fit-end-value-button', 'n_clicks_timestamp'),
+     #Input('fit-ref-point-button', 'n_clicks_timestamp'),
+     #Input('fit-start-value-button', 'n_clicks_timestamp'),
+     #Input('fit-end-value-button', 'n_clicks_timestamp'),
      Input('fit-button', 'n_clicks_timestamp'),
-     Input('fit-confirm-button', 'n_clicks_timestamp'),
+     #Input('fit-confirm-button', 'n_clicks_timestamp'),
      Input('fit-clear-button', 'n_clicks_timestamp'),
      Input('set-binning-zoom-button', 'n_clicks_timestamp'),
-     Input('delete-button', 'n_clicks_timestamp'),
+     #Input('delete-button', 'n_clicks_timestamp'),
      Input('refresh-graph-button', 'n_clicks_timestamp')
      ],
     [State('buttons-times', 'children')])
 @timeit
 def update_last_clicked_button(*args):
     buttonNames = ('set-binning-full-button', 'zoom-point-button',
-                   'load-state-button', 'fit-ref-point-button',
-                   'fit-start-value-button',
-                   'fit-end-value-button',
-                   'fit-button', 'fit-confirm-button',
+                   'load-state-button', 
+                   #'fit-ref-point-button',
+                   #'fit-start-value-button',
+                   #'fit-end-value-button',
+                   'fit-button', 
+                   #'fit-confirm-button',
                    'clear-fit-button', 'set-binning-zoom-button',
-                   'delete-button', 'refresh-graph-button',
+                   #'delete-button',
+                   'refresh-graph-button',
                    # 'reload-button', 'download-button'
                    )
 
@@ -555,49 +560,51 @@ def update_fit_function(_, fitFunction,
                         refPointValueX, refPointValueY):
 
     logger.warning(fitFunction)
+    
     parameterValue = float(parameterValue)
     global fit_func, fit_start_value_x, fit_end_value_x
     if fit_start_value_x is not None and fit_end_value_x is not None:
         if fit_start_value_x > fit_end_value_x:
             fit_start_value_x, fit_end_value_x = fit_end_value_x, fit_start_value_x
-        dff = get_activ(sf_trigger)
-        dff = dff[(dff.time >= fit_start_value_x) &
-                  (dff.time <= fit_end_value_x)]
+    else:
+        fit_start_value_x = df.time.min()
+        fit_end_value_x = df.time.max()
+    dff = get_activ(sf_trigger)
+    if len(dff.index) == 0:
+        return []
+    dff = dff[(dff.time >= fit_start_value_x) &
+              (dff.time <= fit_end_value_x)]
 
-        if fitFunction == 'spline':
-            edge_distance = int(parameterValue // 2)
-            parameters = {
-              'fit_start_value_x': fit_start_value_x,
-              'fit_end_value_x': fit_end_value_x,
-              'left_bin': dff.head(edge_distance).mean(),
-              'right_bin': dff.tail(edge_distance).mean()
-            }
-            dff = get_binned_xy(dff, parameterValue, sf_trigger)
+    if fitFunction == 'spline':
+        edge_distance = int(parameterValue // 2)
+        parameters = {
+          'fit_start_value_x': fit_start_value_x,
+          'fit_end_value_x': fit_end_value_x,
+          'left_bin': dff.head(edge_distance).mean(),
+          'right_bin': dff.tail(edge_distance).mean()
+        }
+        dff = get_binned_xy(dff, parameterValue, sf_trigger)
 
-            fit_func = fit_function(dff, fitFunction, parameters)
-            return []
-        if (fitFunction == 'movingaverage_p' or fitFunction == 'movingaverage_t'):
-            fit_func = fit_function(dff, fitFunction,
-                [parameterValue, parameterValue2])
-            return []
-        if fitFunction == 'shift':
-            fit_func = fit_function(dff, fitFunction,
-                [parameterValue, None,
-                refPointValueX, refPointValueY])
-            return []
-
-        fit_func = fit_function(dff, fitFunction)
+        fit_func = fit_function(dff, fitFunction, parameters)
+        return []
+    if (fitFunction == 'movingaverage_p' or fitFunction == 'movingaverage_t'):
+        fit_func = fit_function(dff, fitFunction,
+            [parameterValue, parameterValue2])
+        return []
+    if fitFunction == 'shift':
+        fit_func = fit_function(dff, fitFunction,
+            [parameterValue, None,
+            refPointValueX, refPointValueY])
         return []
 
+    fit_func = fit_function(dff, fitFunction)
     return []
-
 
 @app.callback(Output('fit-confirmed', 'children'),
               [Input('fit-confirm-button', 'n_clicks_timestamp')],
-              [State('fit-ref-point-y', 'value'),
-               State('all-data-mean-text', 'children')])
+              [State('fit-ref-point-y', 'value')])
 @timeit
-def confirm_fit_function(_, refPointValue, all_data_mean):
+def confirm_fit_function(_, refPointValue):
     global confirmed_fit_func, fit_func, sf_trigger, df
     global fit_start_value_x, fit_end_value_x
 
@@ -713,11 +720,11 @@ def update_all_data_graph(_, buttonsTimes, relayoutData,
     relayout_xrange = []
     relayout_yrange = []
     if relayoutData:
-        if 'xaxis' in relayoutData:
-            relayout_xrange = relayoutData['xaxis']
+        if 'xaxis.range' in relayoutData:
+            relayout_xrange = relayoutData['xaxis.range']
 
-        if 'yaxis' in relayoutData:
-            relayout_yrange = relayoutData['yaxis']
+        if 'yaxis.range' in relayoutData:
+            relayout_yrange = relayoutData['yaxis.range']
 
     layout['xaxis'] = dict(range=relayout_xrange,
                            title='Time [JD - {}]'.format(start_date_int))
@@ -874,12 +881,13 @@ def show_upload_file(_):
     return '---'
 
 @app.callback(Output('save-state-temp', 'children'),
-              [Input('buttons-times', 'children')])
+              [Input('fit-confirm-button', 'n_clicks_timestamp'),
+               Input('delete-button', 'n_clicks_timestamp')])
 @timeit
-def save_state(buttonsTimes):
-    buttonsTimes, lastClickedButton = load_button_times(buttonsTimes)
-    if lastClickedButton in ['delete-button', 'fit-confirm-button']:
-        stateRecorder.save_state(df, lastClickedButton)
+def save_state(_, _2):
+    trigger = dash.callback_context.triggered[0]['prop_id']
+    logger.info("Saved state by {}".format(trigger))
+    stateRecorder.save_state(df, trigger)
     return time.time()
 
 
@@ -901,10 +909,12 @@ def load_state(_, state):
 @app.callback(Output('save-output-temp', 'children'),
               [Input('save-output-button', 'n_clicks_timestamp')],
               [State('save-format', 'value'),
-               State('ppt', 'values')])
+               State('ppt', 'value')])
 @timeit
 def save_output(_, save_format, ppt):
     logger.info('ppt calculate - {}'.format(ppt))
+    if ppt is None:
+        raise PreventUpdate
     if len(ppt) > 0:
       ppt = True
     else:
@@ -1028,11 +1038,14 @@ def get_global_mean(dff, sf_trigger):
 # CSS
 ########################################################
 
+"""
 app.css.append_css({
     "external_url": "/static/main.css"})
 app.css.append_css({
     "external_url": "/static/loading.css"})
+"""
+
 
 if __name__ == '__main__':
 
-    app.run_server(host="0.0.0.0", port=8050, debug=True, threaded=False)
+    app.run_server(host="0.0.0.0", port=8050, threaded=False)

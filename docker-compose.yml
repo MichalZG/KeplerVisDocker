@@ -11,9 +11,12 @@ services:
       - .:/code
     depends_on:
       - "redis"
+    environment: 
+      - DASH_DEBUG="${DASH_DEBUG}"
     command: ["python", "-u", "app.py"]
 
   redis:
     image: "redis:alpine"
-    command: ["redis-server", "--appendonly", "yes"]
+    #command: ["redis-server", "--appendonly", "yes"]
+    command: ["redis-server"]
     hostname: redis

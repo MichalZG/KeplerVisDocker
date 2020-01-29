@@ -12,7 +12,7 @@ import configparser
 import logging
 import io
 import base64
-
+import string
 
 config = configparser.ConfigParser()
 config.read('./config/config.cfg')
@@ -53,15 +53,24 @@ def timeit(method):
     return timed
 
 
+"""
+col_names = ['time', 'counts', 'err', 'flag']
+add_names = [x for x in string.ascii_lowercase][:len(data.columns)-len(col_names)]
+col_names.extend(add_names)
+data.columns = col_names
+"""
+
 @timeit
 def open_upload_file(content_string):
     df = pd.read_csv(io.StringIO(
         base64.b64decode(content_string).decode('utf-8')),
-        usecols=[int(x) - 1 for x in config.get(
-            'FILES', 'USE_COLUMNS').split(',')],
-        names=config.get('FILES', 'COLUMNS_NAMES').split(','),
-        delim_whitespace=True, comment='#', skip_blank_lines=True,
+        delim_whitespace=True, comment='#', skip_blank_lines=True, header=None,
         dtype=np.float64)
+    col_names = ['time', 'counts']
+    add_names = [x for x in string.ascii_lowercase][:len(df.columns)-len(col_names)]
+    col_names.extend(add_names)
+    df.columns = col_names
+    df = df.dropna(axis=1, how='all')
     start_date_int = config.getfloat('FILES', 'START_JD')
     if df.time[0] > 2450000.0:
         start_date_int += 2450000.0
@@ -115,7 +124,8 @@ def fit_function(dff, fitFunction, parameters=[]):
         parameters[0] = int(parameters[0])
         roll_dff = dff.copy().rolling(window=parameters[0],
             min_periods=1, center=True) 
-        roll_df_mean = roll_dff.mean()[roll_dff.mean().time > 0]
+        #roll_df_mean = roll_dff.mean()[roll_dff.mean().time > 0]
+        roll_df_mean = roll_dff.mean()
         xnew = roll_df_mean.index
         ynew = roll_df_mean.counts
 
@@ -294,29 +304,42 @@ class StateRecorder:
 
     def save_output(self, dff, file_name, save_format, ppt):
         time_now = time.strftime("D%d%m%yT%H%M%S", time.gmtime())
-        # file_name = file_name.replace('.', '_{}.'.format(time_now))
         file_name = '_'.join([file_name, time_now]) + '.' + save_format
         dff = dff[dff['activ'] == 1]
 
-        columns_to_save = config.get('FILES', 'COLUMNS_NAMES').split(',')
-        columns_format = config.get(
-                    'FILES', 'OUTPUT_COLUMNS_FORMAT').replace(',', ' ')
+        # columns_to_save = ['time', 'counts', 'counts_err', 'flags']
+        # columns_to_save = [col for col in columns_to_save if col in dff.columns]
+        # columns_to_save = columns_to_save[:len(dff.columns)]
+        # columns_format = config.get(
+        #             'FILES', 'OUTPUT_COLUMNS_FORMAT')
 
+        columns_to_save = dff.columns.tolist()
+        logger.info('Columns to save {}'.format(columns_to_save))
+
+        columns_to_save.remove('time')
+        temp_col = ['time']
+        temp_col.extend(columns_to_save)
+        columns_to_save = temp_col
+        logger.info('Columns to save {}'.format(columns_to_save))
+        dff = dff[columns_to_save]
+        # logger.info(dff)
+        columns_to_save.remove('activ')
+
+        logger.info('Columns to save {}'.format(columns_to_save))
         logger.info('Save to {}'.format(save_format))
         logger.info('PPT calulate - {}'.format(str(ppt)))
+
         if ppt is True:
             dff = self.calculate_ppt(dff)
             columns_to_save[columns_to_save.index('counts')] = 'ppt'
-            # columns_to_save.append('ppt')
-            columns_to_save.remove('errors')
-            # columns_format += ' %.8f'
-            columns_format = ' '.join(columns_format.split(' ')[1:])
+            if 'counts_err' in columns_to_save:
+                columns_to_save.remove('counts_err')
+            # columns_format = ' '.join(columns_format.split(' ')[1:])
 
         if save_format == 'csv':
             dff.to_csv(os.path.join(
                 config.get('STATE', 'OUTPUT_PATH'), file_name), index=False,
                 columns=columns_to_save,
-                # float_format=columns_format
                 )
 
         elif save_format == 'txt':
@@ -324,7 +347,7 @@ class StateRecorder:
                 config.get('STATE', 'OUTPUT_PATH'), file_name),
                 # np.c_[dff.time, dff.counts, dff.errors, dff.flags],
                 np.c_[tuple(dff[column] for column in columns_to_save)],
-                fmt=columns_format,
+                fmt='%.6f',
                 header=' '.join(columns_to_save))
 
         return True
