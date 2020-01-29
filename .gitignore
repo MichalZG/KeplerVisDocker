@@ -3,3 +3,4 @@ log.dat
 /outputs/
 /.tmp/
 .ipynb_checkpoints/
+config/config.cfg

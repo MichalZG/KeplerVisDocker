@@ -347,7 +347,8 @@ class StateRecorder:
                 config.get('STATE', 'OUTPUT_PATH'), file_name),
                 # np.c_[dff.time, dff.counts, dff.errors, dff.flags],
                 np.c_[tuple(dff[column] for column in columns_to_save)],
-                fmt='%.6f',
+                #fmt='%.6f',
+                fmt=config.get('FILES', 'OUTPUT_COLUMNS_FORMAT'),
                 header=' '.join(columns_to_save))
 
         return True
