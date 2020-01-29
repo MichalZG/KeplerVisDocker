@@ -128,7 +128,7 @@ app.layout = html.Div([
                     id='save-format',
                     options=[{'label': 'csv', 'value': 'csv'},
                              {'label': 'txt', 'value': 'txt'}],
-                    value='csv',
+                    value='txt',
                     placeholder="Select format"
                     ),
                 dcc.Checklist(
