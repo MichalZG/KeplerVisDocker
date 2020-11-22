@@ -18,6 +18,7 @@ config = configparser.ConfigParser()
 config.read('./config/config.cfg')
 
 
+
 def create_logger():
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
