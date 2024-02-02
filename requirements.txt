@@ -7,4 +7,4 @@ numpy
 pytest
 flask
 Flask_Caching
-dash==1.7.0
+dash==2.15.0
